@@ -1,8 +1,8 @@
 "use strict";
 /* ====================================================================
    teams.js — Länder, Schützen und die SVG-Flaggen
-   Die Reihenfolge von TEAMS und PLAYERS gehört zusammen:
-   TEAMS[i] spielt mit PLAYERS[i] und trägt die Flagge flagInner(i).
+   Alle Listen sind gleich sortiert: TEAMS[i] trägt das Trikot KITS[i],
+   die Flagge flagInner(i) und tritt mit dem Kader KADER[i] an.
    ==================================================================== */
 
 const TEAMS = [
@@ -12,34 +12,274 @@ const TEAMS = [
   "Marokko","Senegal"
 ];
 
-const PLAYERS = [
-  {p:"Granit Xhaka",      num:10, skin:"#e8b88a", hair:"#26201a", style:"short", jersey:"#d52b1e", shorts:"#f2f5ef", socks:"#d52b1e"},
-  {p:"Jamal Musiala",     num:10, skin:"#8d5a3b", hair:"#161310", style:"curly", jersey:"#f2f5ef", shorts:"#1a1a1a", socks:"#f2f5ef"},
-  {p:"David Alaba",       num:8,  skin:"#7a4a30", hair:"#161310", style:"short", jersey:"#d52b1e", shorts:"#f2f5ef", socks:"#d52b1e"},
-  {p:"Kylian Mbappé",     num:10, skin:"#8d5a3b", hair:"#161310", style:"buzz",  jersey:"#1c2f8a", shorts:"#f2f5ef", socks:"#d52b1e"},
-  {p:"Federico Chiesa",   num:14, skin:"#e8b88a", hair:"#2a2118", style:"short", jersey:"#2a6df0", shorts:"#f2f5ef", socks:"#2a6df0"},
-  {p:"Lamine Yamal",      num:19, skin:"#c98a5b", hair:"#161310", style:"curly", jersey:"#c60b1e", shorts:"#1c2f8a", socks:"#c60b1e"},
-  {p:"Cristiano Ronaldo", num:7,  skin:"#e0a87a", hair:"#1c1712", style:"short", jersey:"#d31334", shorts:"#046a38", socks:"#d31334"},
-  {p:"Harry Kane",        num:9,  skin:"#e8b88a", hair:"#6b4a2a", style:"short", jersey:"#f2f5ef", shorts:"#1c2f55", socks:"#f2f5ef"},
-  {p:"Virgil van Dijk",   num:4,  skin:"#6f4428", hair:"#161310", style:"bun",   jersey:"#f36c21", shorts:"#f2f5ef", socks:"#f36c21"},
-  {p:"Kevin De Bruyne",   num:7,  skin:"#f0c8a0", hair:"#c87f3a", style:"short", jersey:"#d52b1e", shorts:"#1a1a1a", socks:"#d52b1e"},
-  {p:"Luka Modrić",       num:10, skin:"#e8b88a", hair:"#8a6a3a", style:"short", jersey:"#f2f5ef", shorts:"#f2f5ef", socks:"#2a4f9e"},
-  {p:"Christian Eriksen", num:10, skin:"#f0c8a0", hair:"#caa55a", style:"short", jersey:"#d52b1e", shorts:"#f2f5ef", socks:"#d52b1e"},
-  {p:"Erling Haaland",    num:9,  skin:"#f0c8a0", hair:"#e8d28a", style:"bun",   jersey:"#d52b1e", shorts:"#1c2f8a", socks:"#1c2f8a"},
-  {p:"Christian Pulisic", num:10, skin:"#e8b88a", hair:"#5a3a22", style:"short", jersey:"#f2f5ef", shorts:"#1c2f8a", socks:"#f2f5ef"},
-  {p:"Alphonso Davies",   num:19, skin:"#6f4428", hair:"#161310", style:"short", jersey:"#d52b1e", shorts:"#d52b1e", socks:"#d52b1e"},
-  {p:"Santiago Giménez",  num:9,  skin:"#c98a5b", hair:"#161310", style:"short", jersey:"#046a38", shorts:"#f2f5ef", socks:"#d52b1e"},
-  {p:"Vinícius Júnior",   num:7,  skin:"#7a4a30", hair:"#161310", style:"curly", jersey:"#ffd400", shorts:"#1c2f8a", socks:"#f2f5ef"},
-  {p:"Lionel Messi",      num:10, skin:"#e8b88a", hair:"#2a2118", style:"short", jersey:"#9ecbf0", shorts:"#1a1a1a", socks:"#f2f5ef"},
-  {p:"Federico Valverde", num:15, skin:"#c98a5b", hair:"#2a2118", style:"buzz",  jersey:"#4aa3dd", shorts:"#1a1a1a", socks:"#1a1a1a"},
-  {p:"Luis Díaz",         num:7,  skin:"#8d5a3b", hair:"#161310", style:"curly", jersey:"#ffd400", shorts:"#1c2f8a", socks:"#d52b1e"},
-  {p:"Moisés Caicedo",    num:23, skin:"#6f4428", hair:"#161310", style:"short", jersey:"#ffd400", shorts:"#1c2f8a", socks:"#ffd400"},
-  {p:"Takefusa Kubo",     num:11, skin:"#f0d0a8", hair:"#1c1712", style:"short", jersey:"#1c2f8a", shorts:"#f2f5ef", socks:"#1c2f8a"},
-  {p:"Son Heung-min",     num:7,  skin:"#f0d0a8", hair:"#1c1712", style:"short", jersey:"#d52b1e", shorts:"#1a1a1a", socks:"#d52b1e"},
-  {p:"Mathew Leckie",     num:7,  skin:"#e8b88a", hair:"#3a2a1a", style:"short", jersey:"#ffd400", shorts:"#046a38", socks:"#ffd400"},
-  {p:"Achraf Hakimi",     num:2,  skin:"#c98a5b", hair:"#161310", style:"short", jersey:"#d52b1e", shorts:"#046a38", socks:"#d52b1e"},
-  {p:"Sadio Mané",        num:10, skin:"#5a3a22", hair:"#161310", style:"buzz",  jersey:"#f2f5ef", shorts:"#046a38", socks:"#d52b1e"}
+/* Heimtrikot pro Land — Farben gehören zum Team, nicht zum Spieler */
+const KITS = [
+  {jersey:"#d52b1e", shorts:"#f2f5ef", socks:"#d52b1e"},   // Schweiz
+  {jersey:"#f2f5ef", shorts:"#1a1a1a", socks:"#f2f5ef"},   // Deutschland
+  {jersey:"#d52b1e", shorts:"#f2f5ef", socks:"#d52b1e"},   // Österreich
+  {jersey:"#1c2f8a", shorts:"#f2f5ef", socks:"#d52b1e"},   // Frankreich
+  {jersey:"#2a6df0", shorts:"#f2f5ef", socks:"#2a6df0"},   // Italien
+  {jersey:"#c60b1e", shorts:"#1c2f8a", socks:"#c60b1e"},   // Spanien
+  {jersey:"#d31334", shorts:"#046a38", socks:"#d31334"},   // Portugal
+  {jersey:"#f2f5ef", shorts:"#1c2f55", socks:"#f2f5ef"},   // England
+  {jersey:"#f36c21", shorts:"#f2f5ef", socks:"#f36c21"},   // Niederlande
+  {jersey:"#d52b1e", shorts:"#1a1a1a", socks:"#d52b1e"},   // Belgien
+  {jersey:"#f2f5ef", shorts:"#f2f5ef", socks:"#2a4f9e"},   // Kroatien
+  {jersey:"#d52b1e", shorts:"#f2f5ef", socks:"#d52b1e"},   // Dänemark
+  {jersey:"#d52b1e", shorts:"#1c2f8a", socks:"#1c2f8a"},   // Norwegen
+  {jersey:"#f2f5ef", shorts:"#1c2f8a", socks:"#f2f5ef"},   // USA
+  {jersey:"#d52b1e", shorts:"#d52b1e", socks:"#d52b1e"},   // Kanada
+  {jersey:"#046a38", shorts:"#f2f5ef", socks:"#d52b1e"},   // Mexiko
+  {jersey:"#ffd400", shorts:"#1c2f8a", socks:"#f2f5ef"},   // Brasilien
+  {jersey:"#9ecbf0", shorts:"#1a1a1a", socks:"#f2f5ef"},   // Argentinien
+  {jersey:"#4aa3dd", shorts:"#1a1a1a", socks:"#1a1a1a"},   // Uruguay
+  {jersey:"#ffd400", shorts:"#1c2f8a", socks:"#d52b1e"},   // Kolumbien
+  {jersey:"#ffd400", shorts:"#1c2f8a", socks:"#ffd400"},   // Ecuador
+  {jersey:"#1c2f8a", shorts:"#f2f5ef", socks:"#1c2f8a"},   // Japan
+  {jersey:"#d52b1e", shorts:"#1a1a1a", socks:"#d52b1e"},   // Südkorea
+  {jersey:"#ffd400", shorts:"#046a38", socks:"#ffd400"},   // Australien
+  {jersey:"#d52b1e", shorts:"#046a38", socks:"#d52b1e"},   // Marokko
+  {jersey:"#f2f5ef", shorts:"#046a38", socks:"#d52b1e"}    // Senegal
 ];
+
+/* Die fünf Schützen pro Land, in der Reihenfolge, in der sie antreten.
+   Das sind bekannte Nationalspieler nach Wissensstand Mai 2026 — die
+   WM-Kader 2026 stehen noch nicht fest. Der erste ist das Gesicht des
+   Landes und wird in der Länderauswahl angezeigt. */
+const KADER = [
+  [ // Schweiz
+    {p:"Granit Xhaka",       num:10, skin:"#e8b88a", hair:"#26201a", style:"short"},
+    {p:"Breel Embolo",       num:7,  skin:"#5a3a22", hair:"#161310", style:"buzz"},
+    {p:"Ruben Vargas",       num:17, skin:"#c98a5b", hair:"#2a2118", style:"short"},
+    {p:"Manuel Akanji",      num:5,  skin:"#6f4428", hair:"#161310", style:"buzz"},
+    {p:"Fabian Rieder",      num:15, skin:"#f0c8a0", hair:"#8a6a3a", style:"short"}
+  ],
+  [ // Deutschland
+    {p:"Jamal Musiala",      num:10, skin:"#8d5a3b", hair:"#161310", style:"curly"},
+    {p:"Florian Wirtz",      num:17, skin:"#f0c8a0", hair:"#8a6a3a", style:"short"},
+    {p:"Kai Havertz",        num:7,  skin:"#e8b88a", hair:"#6b4a2a", style:"short"},
+    {p:"Joshua Kimmich",     num:6,  skin:"#f0c8a0", hair:"#caa55a", style:"short"},
+    {p:"Niclas Füllkrug",    num:9,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"}
+  ],
+  [ // Österreich
+    {p:"David Alaba",        num:8,  skin:"#7a4a30", hair:"#161310", style:"short"},
+    {p:"Marcel Sabitzer",    num:9,  skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Christoph Baumgartner", num:19, skin:"#f0c8a0", hair:"#6b4a2a", style:"short"},
+    {p:"Konrad Laimer",      num:6,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"},
+    {p:"Marko Arnautović",   num:7,  skin:"#e8b88a", hair:"#1c1712", style:"short"}
+  ],
+  [ // Frankreich
+    {p:"Kylian Mbappé",      num:10, skin:"#8d5a3b", hair:"#161310", style:"buzz"},
+    {p:"Ousmane Dembélé",    num:11, skin:"#6f4428", hair:"#161310", style:"curly"},
+    {p:"Aurélien Tchouaméni",num:8,  skin:"#5a3a22", hair:"#161310", style:"buzz"},
+    {p:"Michael Olise",      num:7,  skin:"#8d5a3b", hair:"#161310", style:"curly"},
+    {p:"Jules Koundé",       num:5,  skin:"#7a4a30", hair:"#161310", style:"bun"}
+  ],
+  [ // Italien
+    {p:"Federico Chiesa",    num:14, skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Nicolò Barella",     num:18, skin:"#e8b88a", hair:"#3a2a1a", style:"short"},
+    {p:"Gianluca Scamacca",  num:9,  skin:"#e8b88a", hair:"#1c1712", style:"short"},
+    {p:"Giacomo Raspadori",  num:12, skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Alessandro Bastoni", num:23, skin:"#e8b88a", hair:"#2a2118", style:"short"}
+  ],
+  [ // Spanien
+    {p:"Lamine Yamal",       num:19, skin:"#c98a5b", hair:"#161310", style:"curly"},
+    {p:"Nico Williams",      num:17, skin:"#8d5a3b", hair:"#161310", style:"curly"},
+    {p:"Pedri",              num:8,  skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Dani Olmo",          num:10, skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Álvaro Morata",      num:7,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"}
+  ],
+  [ // Portugal
+    {p:"Cristiano Ronaldo",  num:7,  skin:"#e0a87a", hair:"#1c1712", style:"short"},
+    {p:"Bruno Fernandes",    num:8,  skin:"#e0a87a", hair:"#2a2118", style:"short"},
+    {p:"Bernardo Silva",     num:10, skin:"#e0a87a", hair:"#1c1712", style:"short"},
+    {p:"Rafael Leão",        num:15, skin:"#5a3a22", hair:"#161310", style:"bun"},
+    {p:"Vitinha",            num:16, skin:"#e0a87a", hair:"#1c1712", style:"short"}
+  ],
+  [ // England
+    {p:"Harry Kane",         num:9,  skin:"#e8b88a", hair:"#6b4a2a", style:"short"},
+    {p:"Jude Bellingham",    num:10, skin:"#c98a5b", hair:"#2a2118", style:"short"},
+    {p:"Phil Foden",         num:11, skin:"#f0c8a0", hair:"#caa55a", style:"short"},
+    {p:"Bukayo Saka",        num:7,  skin:"#5a3a22", hair:"#161310", style:"buzz"},
+    {p:"Declan Rice",        num:4,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"}
+  ],
+  [ // Niederlande
+    {p:"Virgil van Dijk",    num:4,  skin:"#6f4428", hair:"#161310", style:"bun"},
+    {p:"Cody Gakpo",         num:11, skin:"#7a4a30", hair:"#161310", style:"buzz"},
+    {p:"Xavi Simons",        num:7,  skin:"#f0c8a0", hair:"#caa55a", style:"bun"},
+    {p:"Frenkie de Jong",    num:21, skin:"#e8b88a", hair:"#3a2a1a", style:"short"},
+    {p:"Denzel Dumfries",    num:22, skin:"#6f4428", hair:"#161310", style:"buzz"}
+  ],
+  [ // Belgien
+    {p:"Kevin De Bruyne",    num:7,  skin:"#f0c8a0", hair:"#c87f3a", style:"short"},
+    {p:"Romelu Lukaku",      num:9,  skin:"#5a3a22", hair:"#161310", style:"buzz"},
+    {p:"Jérémy Doku",        num:11, skin:"#5a3a22", hair:"#161310", style:"curly"},
+    {p:"Youri Tielemans",    num:8,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"},
+    {p:"Leandro Trossard",   num:17, skin:"#f0c8a0", hair:"#8a6a3a", style:"short"}
+  ],
+  [ // Kroatien
+    {p:"Luka Modrić",        num:10, skin:"#e8b88a", hair:"#8a6a3a", style:"short"},
+    {p:"Andrej Kramarić",    num:9,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"},
+    {p:"Mateo Kovačić",      num:8,  skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Joško Gvardiol",     num:20, skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Ivan Perišić",       num:4,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"}
+  ],
+  [ // Dänemark
+    {p:"Christian Eriksen",  num:10, skin:"#f0c8a0", hair:"#caa55a", style:"short"},
+    {p:"Rasmus Højlund",     num:9,  skin:"#f0c8a0", hair:"#caa55a", style:"short"},
+    {p:"Pierre-Emile Højbjerg", num:23, skin:"#f0c8a0", hair:"#8a6a3a", style:"short"},
+    {p:"Mikkel Damsgaard",   num:14, skin:"#f0c8a0", hair:"#e8d28a", style:"short"},
+    {p:"Joachim Andersen",   num:2,  skin:"#f0c8a0", hair:"#caa55a", style:"short"}
+  ],
+  [ // Norwegen
+    {p:"Erling Haaland",     num:9,  skin:"#f0c8a0", hair:"#e8d28a", style:"bun"},
+    {p:"Martin Ødegaard",    num:10, skin:"#f0c8a0", hair:"#caa55a", style:"short"},
+    {p:"Alexander Sørloth",  num:19, skin:"#f0c8a0", hair:"#8a6a3a", style:"short"},
+    {p:"Antonio Nusa",       num:11, skin:"#6f4428", hair:"#161310", style:"curly"},
+    {p:"Oscar Bobb",         num:17, skin:"#c98a5b", hair:"#2a2118", style:"curly"}
+  ],
+  [ // USA
+    {p:"Christian Pulisic",  num:10, skin:"#e8b88a", hair:"#5a3a22", style:"short"},
+    {p:"Weston McKennie",    num:8,  skin:"#7a4a30", hair:"#161310", style:"buzz"},
+    {p:"Folarin Balogun",    num:9,  skin:"#5a3a22", hair:"#161310", style:"buzz"},
+    {p:"Timothy Weah",       num:21, skin:"#6f4428", hair:"#161310", style:"curly"},
+    {p:"Tyler Adams",        num:4,  skin:"#7a4a30", hair:"#161310", style:"buzz"}
+  ],
+  [ // Kanada
+    {p:"Alphonso Davies",    num:19, skin:"#6f4428", hair:"#161310", style:"short"},
+    {p:"Jonathan David",     num:20, skin:"#5a3a22", hair:"#161310", style:"buzz"},
+    {p:"Cyle Larin",         num:17, skin:"#6f4428", hair:"#161310", style:"buzz"},
+    {p:"Stephen Eustáquio",  num:7,  skin:"#c98a5b", hair:"#2a2118", style:"short"},
+    {p:"Tajon Buchanan",     num:11, skin:"#7a4a30", hair:"#161310", style:"curly"}
+  ],
+  [ // Mexiko
+    {p:"Santiago Giménez",   num:9,  skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Hirving Lozano",     num:22, skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Edson Álvarez",      num:4,  skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Orbelín Pineda",     num:10, skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Raúl Jiménez",       num:11, skin:"#c98a5b", hair:"#1c1712", style:"short"}
+  ],
+  [ // Brasilien
+    {p:"Vinícius Júnior",    num:7,  skin:"#7a4a30", hair:"#161310", style:"curly"},
+    {p:"Rodrygo",            num:11, skin:"#8d5a3b", hair:"#161310", style:"short"},
+    {p:"Raphinha",           num:19, skin:"#c98a5b", hair:"#161310", style:"curly"},
+    {p:"Bruno Guimarães",    num:5,  skin:"#8d5a3b", hair:"#161310", style:"short"},
+    {p:"Marquinhos",         num:4,  skin:"#c98a5b", hair:"#161310", style:"short"}
+  ],
+  [ // Argentinien
+    {p:"Lionel Messi",       num:10, skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Julián Álvarez",     num:9,  skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Lautaro Martínez",   num:22, skin:"#e8b88a", hair:"#1c1712", style:"short"},
+    {p:"Enzo Fernández",     num:24, skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Alexis Mac Allister",num:20, skin:"#e8b88a", hair:"#3a2a1a", style:"short"}
+  ],
+  [ // Uruguay
+    {p:"Federico Valverde",  num:15, skin:"#c98a5b", hair:"#2a2118", style:"buzz"},
+    {p:"Darwin Núñez",       num:9,  skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Rodrigo Bentancur",  num:6,  skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Ronald Araújo",      num:4,  skin:"#c98a5b", hair:"#2a2118", style:"short"},
+    {p:"Nicolás De la Cruz", num:10, skin:"#c98a5b", hair:"#161310", style:"short"}
+  ],
+  [ // Kolumbien
+    {p:"Luis Díaz",          num:7,  skin:"#8d5a3b", hair:"#161310", style:"curly"},
+    {p:"James Rodríguez",    num:10, skin:"#e8b88a", hair:"#caa55a", style:"short"},
+    {p:"Jhon Durán",         num:9,  skin:"#7a4a30", hair:"#161310", style:"buzz"},
+    {p:"Jefferson Lerma",    num:8,  skin:"#7a4a30", hair:"#161310", style:"short"},
+    {p:"Dávinson Sánchez",   num:23, skin:"#6f4428", hair:"#161310", style:"buzz"}
+  ],
+  [ // Ecuador
+    {p:"Moisés Caicedo",     num:23, skin:"#6f4428", hair:"#161310", style:"short"},
+    {p:"Enner Valencia",     num:13, skin:"#7a4a30", hair:"#161310", style:"short"},
+    {p:"Kendry Páez",        num:10, skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Piero Hincapié",     num:3,  skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Pervis Estupiñán",   num:7,  skin:"#6f4428", hair:"#161310", style:"curly"}
+  ],
+  [ // Japan
+    {p:"Takefusa Kubo",      num:11, skin:"#f0d0a8", hair:"#1c1712", style:"short"},
+    {p:"Kaoru Mitoma",       num:14, skin:"#f0d0a8", hair:"#1c1712", style:"short"},
+    {p:"Daichi Kamada",      num:15, skin:"#f0d0a8", hair:"#1c1712", style:"short"},
+    {p:"Ayase Ueda",         num:9,  skin:"#f0d0a8", hair:"#1c1712", style:"short"},
+    {p:"Wataru Endō",        num:6,  skin:"#f0d0a8", hair:"#1c1712", style:"buzz"}
+  ],
+  [ // Südkorea
+    {p:"Son Heung-min",      num:7,  skin:"#f0d0a8", hair:"#1c1712", style:"short"},
+    {p:"Lee Kang-in",        num:18, skin:"#f0d0a8", hair:"#1c1712", style:"short"},
+    {p:"Hwang Hee-chan",     num:11, skin:"#f0d0a8", hair:"#1c1712", style:"short"},
+    {p:"Cho Gue-sung",       num:9,  skin:"#f0d0a8", hair:"#1c1712", style:"short"},
+    {p:"Kim Min-jae",        num:4,  skin:"#f0d0a8", hair:"#1c1712", style:"buzz"}
+  ],
+  [ // Australien
+    {p:"Mathew Leckie",      num:7,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"},
+    {p:"Jackson Irvine",     num:22, skin:"#f0c8a0", hair:"#caa55a", style:"bun"},
+    {p:"Mitchell Duke",      num:15, skin:"#e8b88a", hair:"#2a2118", style:"short"},
+    {p:"Craig Goodwin",      num:11, skin:"#e8b88a", hair:"#3a2a1a", style:"short"},
+    {p:"Harry Souttar",      num:19, skin:"#f0c8a0", hair:"#8a6a3a", style:"short"}
+  ],
+  [ // Marokko
+    {p:"Achraf Hakimi",      num:2,  skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Hakim Ziyech",       num:7,  skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Youssef En-Nesyri",  num:19, skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Brahim Díaz",        num:11, skin:"#c98a5b", hair:"#161310", style:"short"},
+    {p:"Sofyan Amrabat",     num:4,  skin:"#c98a5b", hair:"#161310", style:"curly"}
+  ],
+  [ // Senegal
+    {p:"Sadio Mané",         num:10, skin:"#5a3a22", hair:"#161310", style:"buzz"},
+    {p:"Iliman Ndiaye",      num:11, skin:"#5a3a22", hair:"#161310", style:"curly"},
+    {p:"Nicolas Jackson",    num:9,  skin:"#5a3a22", hair:"#161310", style:"buzz"},
+    {p:"Pape Matar Sarr",    num:17, skin:"#5a3a22", hair:"#161310", style:"short"},
+    {p:"Kalidou Koulibaly",  num:3,  skin:"#5a3a22", hair:"#161310", style:"buzz"}
+  ]
+];
+
+/* Das Gesicht eines Landes: der erste Schütze */
+function stern(i){ return KADER[i][0]; }
+
+/* ---------- Der ganze Kader: 11 Schützen pro Land ----------
+   Nach den echten Regeln muss jeder Spieler einmal geschossen haben,
+   bevor einer zum zweiten Mal antritt. Die fünf bekannten Schützen
+   stehen oben; die Plätze 6 bis 11 füllen Kaderspieler, die mit ihrer
+   Nummer antreten — echte Namen erfinde ich dafür nicht. */
+const KADER_GROESSE = 11;
+const ZUSATZ_NUMMERN = [3, 12, 13, 16, 18, 21, 24, 2, 5, 6, 20];
+const ZUSATZ_STILE = ["short","short","buzz","curly","short","bun"];
+
+const kaderCache = [];
+function kaderVoll(i){
+  if(kaderCache[i]) return kaderCache[i];
+  const voll = KADER[i].slice();
+  const belegt = voll.map(s=>s.num);
+  /* Haut- und Haarfarben aus den bekannten Spielern des Landes nehmen,
+     damit die Ersatzleute zum Team passen */
+  const skins = KADER[i].map(s=>s.skin);
+  const haare = KADER[i].map(s=>s.hair);
+  let n = 0;
+  while(voll.length < KADER_GROESSE){
+    /* Nummer suchen, die im Team noch frei ist. Der Startpunkt hängt am
+       Land, damit nicht jedes Team dieselben Ersatznummern hat. */
+    let versuch = n + i * 3;
+    let num = ZUSATZ_NUMMERN[versuch % ZUSATZ_NUMMERN.length];
+    const grenze = versuch + ZUSATZ_NUMMERN.length;
+    while(belegt.indexOf(num) >= 0 && versuch < grenze){
+      versuch++;
+      num = ZUSATZ_NUMMERN[versuch % ZUSATZ_NUMMERN.length];
+    }
+    if(belegt.indexOf(num) >= 0) num = 30 + voll.length;
+    belegt.push(num);
+    /* Aussehen deterministisch aus Land und Kaderplatz — bleibt gleich */
+    const k = voll.length;
+    const misch = i*13 + k*7;
+    voll.push({
+      p: "Nr. " + num,
+      num: num,
+      skin: skins[misch % skins.length],
+      hair: haare[(misch + 2) % haare.length],
+      style: ZUSATZ_STILE[(misch + k) % ZUSATZ_STILE.length]
+    });
+    n++;
+  }
+  kaderCache[i] = voll;
+  return voll;
+}
 
 /* Kurzzeichen für den Turnierbaum (gleiche Reihenfolge wie TEAMS) */
 const KURZ = [

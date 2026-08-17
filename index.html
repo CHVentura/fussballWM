@@ -40,7 +40,8 @@
         Ablauf pro Elfmeter: Der Torwart wählt verdeckt <b>3 Zonen</b> (Tasten 1–9, Nummernblock-Layout),
         danach wählt der Schütze <b>1 Zone</b>. Trifft der Schütze eine abgedeckte Zone, hält der Torwart —
         sonst ist es ein Tor. Klassisches Format: 5 Schüsse pro Team, danach Sudden Death.
-        Jedes Land tritt mit seinem bekanntesten Schützen im Heimtrikot an.
+        Jedes Land hat 11 Schützen: Sie kommen der Reihe nach — erst wenn alle geschossen
+        haben, ist der erste wieder dran.
       </p>
     </div>
   </section>
@@ -68,12 +69,55 @@
     </div>
 
     <div class="pitch">
-      <svg id="goal" viewBox="0 0 600 400" aria-label="Tor mit 9 Zonen">
+     <!-- Die Szene liegt in zwei Ebenen mit echtem Abstand in der Tiefe:
+          "fern" sind Ränge und Flutlicht, "nah" Rasen, Tor und Figuren.
+          Beim Kameraschwenk entsteht dadurch echte Parallaxe. -->
+     <div class="szene" id="szene">
+      <div class="szene-atem" id="szeneAtem">
+
+      <!-- ======== EBENE FERN: Ränge und Flutlicht ======== -->
+      <svg class="lage-fern" id="goalBg" viewBox="0 0 600 400" aria-hidden="true">
         <defs>
           <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#060d09"/>
             <stop offset="1" stop-color="#0d2417"/>
           </linearGradient>
+          <radialGradient id="lampenhalo" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="rgba(255,250,225,.55)"/>
+            <stop offset="0.5" stop-color="rgba(255,244,200,.16)"/>
+            <stop offset="1" stop-color="rgba(255,244,200,0)"/>
+          </radialGradient>
+        </defs>
+        <rect x="0" y="0" width="600" height="252" fill="url(#sky)"/>
+        <rect x="0" y="0" width="600" height="128" fill="#0c1812"/>
+        <g id="crowd"></g>
+
+        <!-- Flutlicht-Masten mit Lampenbänken und Lichtkegeln -->
+        <g class="flutlicht">
+          <polygon points="70,0 10,0 190,150 230,150" fill="rgba(255,246,214,.06)"/>
+          <polygon points="530,0 590,0 410,150 370,150" fill="rgba(255,246,214,.06)"/>
+          <polygon points="196,0 168,0 250,120 276,120" fill="rgba(255,246,214,.035)"/>
+          <polygon points="404,0 432,0 350,120 324,120" fill="rgba(255,246,214,.035)"/>
+          <ellipse cx="40" cy="14" rx="46" ry="26" fill="url(#lampenhalo)"/>
+          <ellipse cx="560" cy="14" rx="46" ry="26" fill="url(#lampenhalo)"/>
+          <ellipse cx="182" cy="12" rx="30" ry="17" fill="url(#lampenhalo)"/>
+          <ellipse cx="418" cy="12" rx="30" ry="17" fill="url(#lampenhalo)"/>
+          <!-- Lampenbänke etwas unter dem Rand: die ferne Ebene ist leicht
+               überskaliert, oben am Rand würden sie angeschnitten -->
+          <g fill="#fffbe8">
+            <rect x="16" y="9" width="9" height="6" rx="2"/><rect x="28" y="9" width="9" height="6" rx="2"/>
+            <rect x="40" y="9" width="9" height="6" rx="2"/><rect x="52" y="9" width="9" height="6" rx="2"/>
+            <rect x="539" y="9" width="9" height="6" rx="2"/><rect x="551" y="9" width="9" height="6" rx="2"/>
+            <rect x="563" y="9" width="9" height="6" rx="2"/><rect x="575" y="9" width="9" height="6" rx="2"/>
+            <rect x="172" y="8" width="8" height="5" rx="2"/><rect x="184" y="8" width="8" height="5" rx="2"/>
+            <rect x="408" y="8" width="8" height="5" rx="2"/><rect x="420" y="8" width="8" height="5" rx="2"/>
+          </g>
+        </g>
+      </svg>
+
+      <!-- ======== EBENE NAH: Rasen, Tor, Figuren ======== -->
+      <svg id="goal" viewBox="0 0 600 400" aria-label="Tor mit 9 Zonen">
+        <defs>
           <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#1a4f31"/>
             <stop offset="1" stop-color="#236842"/>
@@ -92,44 +136,7 @@
             <stop offset="0.55" stop-color="rgba(255,246,214,.07)"/>
             <stop offset="1" stop-color="rgba(255,246,214,0)"/>
           </radialGradient>
-          <!-- Flutlicht: Halo um die Lampen -->
-          <radialGradient id="lampenhalo" cx="0.5" cy="0.5" r="0.5">
-            <stop offset="0" stop-color="rgba(255,250,225,.55)"/>
-            <stop offset="0.5" stop-color="rgba(255,244,200,.16)"/>
-            <stop offset="1" stop-color="rgba(255,244,200,0)"/>
-          </radialGradient>
-          <!-- Abdunklung an den Rändern (Stadionstimmung) -->
-          <radialGradient id="vignette" cx="0.5" cy="0.58" r="0.72">
-            <stop offset="0.45" stop-color="rgba(0,0,0,0)"/>
-            <stop offset="0.8" stop-color="rgba(0,0,0,.22)"/>
-            <stop offset="1" stop-color="rgba(0,0,0,.5)"/>
-          </radialGradient>
         </defs>
-
-        <!-- Stadion-Hintergrund -->
-        <rect x="0" y="0" width="600" height="252" fill="url(#sky)"/>
-        <rect x="0" y="0" width="600" height="128" fill="#0c1812"/>
-        <g id="crowd"></g>
-
-        <!-- Flutlicht-Masten mit Lampenbänken und Lichtkegeln -->
-        <g class="flutlicht" aria-hidden="true">
-          <polygon points="70,0 10,0 190,150 230,150" fill="rgba(255,246,214,.06)"/>
-          <polygon points="530,0 590,0 410,150 370,150" fill="rgba(255,246,214,.06)"/>
-          <polygon points="196,0 168,0 250,120 276,120" fill="rgba(255,246,214,.035)"/>
-          <polygon points="404,0 432,0 350,120 324,120" fill="rgba(255,246,214,.035)"/>
-          <ellipse cx="40" cy="6" rx="46" ry="26" fill="url(#lampenhalo)"/>
-          <ellipse cx="560" cy="6" rx="46" ry="26" fill="url(#lampenhalo)"/>
-          <ellipse cx="182" cy="4" rx="30" ry="17" fill="url(#lampenhalo)"/>
-          <ellipse cx="418" cy="4" rx="30" ry="17" fill="url(#lampenhalo)"/>
-          <g fill="#fffbe8">
-            <rect x="16" y="1" width="9" height="6" rx="2"/><rect x="28" y="1" width="9" height="6" rx="2"/>
-            <rect x="40" y="1" width="9" height="6" rx="2"/><rect x="52" y="1" width="9" height="6" rx="2"/>
-            <rect x="539" y="1" width="9" height="6" rx="2"/><rect x="551" y="1" width="9" height="6" rx="2"/>
-            <rect x="563" y="1" width="9" height="6" rx="2"/><rect x="575" y="1" width="9" height="6" rx="2"/>
-            <rect x="172" y="0" width="8" height="5" rx="2"/><rect x="184" y="0" width="8" height="5" rx="2"/>
-            <rect x="408" y="0" width="8" height="5" rx="2"/><rect x="420" y="0" width="8" height="5" rx="2"/>
-          </g>
-        </g>
 
         <!-- Rasen -->
         <rect x="0" y="250" width="600" height="150" fill="url(#grass)"/>
@@ -261,11 +268,15 @@
         </g>
 
         <g id="fx"></g>
-        <!-- Randabdunklung ganz oben drüber, ohne Klicks zu stören -->
-        <rect x="0" y="0" width="600" height="400" fill="url(#vignette)" pointer-events="none"/>
       </svg>
+
+      <!-- Ball und Schatten liegen in derselben Ebene wie das Tor,
+           damit sie den Kameraschwenk mitmachen -->
       <div class="ballshadow" id="ballshadow"></div>
       <div class="ball" id="ball"></div>
+      </div><!-- /szene-atem — die Randabdunklung liegt als ::after darüber -->
+     </div><!-- /szene -->
+
       <div class="banner" id="banner"></div>
       <button class="next-btn" id="nextBtn" type="button">Weiter ⏎</button>
     </div>
