@@ -1,0 +1,547 @@
+/* Elfmeterschiessen WM 2026 — Stilvorgaben
+   Aufgeteilt aus der urspruenglichen Einzeldatei (siehe archiv/) */
+
+:root{
+  --nacht:#0a1410;
+  --rasen-hell:#1d5837;
+  --kreide:#f2f5ef;
+  --kreide-dim:rgba(242,245,239,.55);
+  --gold:#f0c548;
+  --rot:#e05548;
+  --gruen:#4cd97b;
+  --netz:rgba(242,245,239,.22);
+  --panel:rgba(8,20,14,.78);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:"Archivo Narrow",system-ui,sans-serif;
+  background:
+    radial-gradient(ellipse 120% 55% at 50% -10%, rgba(240,197,72,.10), transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% 110%, var(--rasen-hell), transparent 70%),
+    var(--nacht);
+  color:var(--kreide);
+  min-height:100%;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:24px 16px 48px;
+}
+.wrap{width:100%;max-width:900px}
+h1{
+  font-family:"Bebas Neue",sans-serif;
+  font-size:clamp(34px,6vw,58px);
+  letter-spacing:.06em;line-height:1;text-align:center;
+}
+h1 .sub{display:block;font-size:.38em;letter-spacing:.42em;color:var(--gold);margin-top:6px}
+.screen{display:none}
+.screen.active{display:block}
+.flag-svg{display:block;flex:none;border-radius:2.5px;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+
+/* ---------- Setup ---------- */
+.setup-card{
+  background:var(--panel);
+  border:1px solid rgba(242,245,239,.14);
+  border-radius:14px;padding:28px;margin-top:26px;
+  backdrop-filter:blur(4px);
+}
+.label{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin:22px 0 10px}
+.label:first-child{margin-top:0}
+.mode-row{display:flex;gap:12px;flex-wrap:wrap}
+.mode-btn{
+  flex:1;min-width:200px;background:transparent;color:var(--kreide);
+  border:1px solid rgba(242,245,239,.3);border-radius:10px;padding:14px 18px;
+  font:inherit;font-size:17px;cursor:pointer;transition:border-color .15s, background .15s;
+}
+.mode-btn:hover{border-color:var(--gold)}
+.mode-btn.sel{background:rgba(240,197,72,.14);border-color:var(--gold)}
+.team-row{display:flex;gap:18px;flex-wrap:wrap}
+.team-col{flex:1;min-width:260px}
+.flag-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));
+  gap:7px;
+}
+.flag-card{
+  position:relative;display:flex;align-items:center;gap:7px;padding:6px 7px;
+  border:1px solid rgba(242,245,239,.22);border-radius:8px;cursor:pointer;
+  background:rgba(242,245,239,.03);
+  transition:border-color .12s, background .12s;
+}
+.flag-card:hover{border-color:rgba(240,197,72,.6)}
+.flag-card.selA{border-color:var(--gold);background:rgba(240,197,72,.16)}
+.flag-card.selB{border-color:#7fb4ff;background:rgba(77,141,240,.18)}
+.flag-card span{font-size:12.5px;line-height:1.12;font-weight:700}
+.flag-card small{display:block;font-weight:500;color:var(--kreide-dim);font-size:10.5px}
+.flag-card .badge{
+  position:absolute;top:-7px;right:-6px;width:19px;height:19px;border-radius:50%;
+  display:none;align-items:center;justify-content:center;
+  font-size:10.5px;font-weight:700;color:#101010;
+  box-shadow:0 1px 4px rgba(0,0,0,.5);
+}
+.flag-card.selA .badge{background:var(--gold)}
+.flag-card.selB .badge{background:#7fb4ff}
+.start-btn{
+  display:block;width:100%;margin-top:30px;
+  font-family:"Bebas Neue",sans-serif;font-size:26px;letter-spacing:.12em;
+  background:var(--gold);color:#1a1406;border:none;border-radius:10px;
+  padding:14px;cursor:pointer;
+}
+.start-btn:hover{filter:brightness(1.08)}
+.hint{font-size:14px;color:var(--kreide-dim);margin-top:14px;line-height:1.5}
+
+/* ---------- Scoreboard ---------- */
+.board{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  background:var(--panel);border:1px solid rgba(242,245,239,.14);
+  border-radius:12px;padding:10px 14px;margin:14px 0 6px;
+  flex-wrap:wrap;position:relative;
+}
+.board .team{flex:1;min-width:170px;text-align:center}
+.board .team .name{
+  font-size:16px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.board .score{
+  font-family:"Bebas Neue",sans-serif;font-size:36px;line-height:1;
+  color:var(--gold);min-width:56px;text-align:center;
+}
+.board .score.pop{animation:spop .4s cubic-bezier(.2,1.4,.4,1)}
+@keyframes spop{40%{transform:scale(1.3)}}
+.snd-btn{
+  position:absolute;right:10px;top:10px;
+  background:transparent;border:1px solid rgba(242,245,239,.3);
+  border-radius:8px;color:var(--kreide);font-size:16px;
+  width:38px;height:34px;cursor:pointer;
+}
+.snd-btn:hover{border-color:var(--gold)}
+.ticks{display:flex;gap:6px;justify-content:center;margin-top:6px;flex-wrap:wrap}
+.tick{
+  width:18px;height:18px;border-radius:50%;
+  border:1.5px solid rgba(242,245,239,.4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;
+}
+.tick.goal{background:var(--gold);border-color:var(--gold);color:#1a1406}
+.tick.fail{background:rgba(224,85,72,.25);border-color:var(--rot);color:var(--rot)}
+.tick.now{border-color:var(--kreide);box-shadow:0 0 0 2px rgba(242,245,239,.25)}
+
+/* ---------- Status ---------- */
+.status{
+  display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+  min-height:34px;margin:4px 0 2px;text-align:center;
+}
+.status .who{
+  font-family:"Bebas Neue",sans-serif;font-size:21px;letter-spacing:.06em;
+  display:flex;align-items:center;gap:8px;
+}
+.status .what{font-size:14.5px;color:var(--kreide-dim)}
+.secret{display:inline-flex;gap:8px;vertical-align:middle}
+.secret span{
+  width:26px;height:26px;border-radius:6px;
+  border:1px dashed rgba(242,245,239,.45);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:16px;color:var(--gold);
+}
+
+/* ---------- Szene ---------- */
+.pitch{position:relative;margin:4px auto 0;max-width:640px;overflow:hidden;border-radius:10px}
+.pitch.shake{animation:pshake .4s}
+@keyframes pshake{
+  0%,100%{transform:translate(0,0)}
+  20%{transform:translate(-5px,3px)}
+  40%{transform:translate(4px,-2px)}
+  60%{transform:translate(-3px,2px)}
+  80%{transform:translate(2px,-1px)}
+}
+/* Nur die grossen Szenen-SVG skalieren mit der Breite mit.
+   Flaggen und Pokal behalten ihre eigene Grösse (width/height im SVG). */
+#goal,#winFig{display:block;width:100%;height:auto}
+.zone{fill:transparent;stroke:var(--netz);stroke-width:1;cursor:pointer}
+.zone:hover{fill:rgba(242,245,239,.06)}
+.zone.kept{fill:rgba(240,197,72,.26)}
+.zone.hit{
+  fill:rgba(76,217,123,.55);stroke:var(--gruen);stroke-width:2.5;
+  animation:zoneflash .9s ease-out;
+}
+.zone.shot-stop{fill:rgba(224,85,72,.45);stroke:var(--rot);stroke-width:2}
+@keyframes zoneflash{0%{fill:rgba(110,255,160,.95)}100%{fill:rgba(76,217,123,.55)}}
+.zone-num{
+  font-family:"Bebas Neue",sans-serif;font-size:15px;
+  fill:rgba(242,245,239,.45);pointer-events:none;
+}
+.camflash{animation:cflash linear infinite;opacity:0}
+@keyframes cflash{0%,93%{opacity:0}95%{opacity:.95}100%{opacity:0}}
+
+/* ---------- Stadionkulisse ----------
+   La-Ola: jede Zuschauer-Spalte hat dieselbe Animation, nur zeitlich
+   versetzt (animation-delay im Markup). So läuft die Welle durchs
+   Stadion, ohne dass JavaScript pro Bild rechnen muss. */
+.ola-sp{
+  animation:ola 13s linear infinite;
+  will-change:transform;
+}
+@keyframes ola{
+  0%{transform:translateY(0)}
+  2%{transform:translateY(-7px)}
+  4.5%{transform:translateY(-2px)}
+  6.5%,100%{transform:translateY(0)}
+}
+/* Flutlicht atmet ganz langsam — nur Deckkraft, das ist günstig */
+.flutlicht{animation:flutpuls 9s ease-in-out infinite}
+@keyframes flutpuls{0%,100%{opacity:.88}50%{opacity:1}}
+
+/* ---------- Zielkreuz ---------- */
+.zk-inner{animation:zkruhig 5s ease-in-out infinite}
+@keyframes zkruhig{
+  0%,100%{transform:translate(0,0)}
+  33%{transform:translate(3px,-2px)}
+  66%{transform:translate(-2px,2px)}
+}
+#zielkreuz.nervoes .zk-inner{animation:zknervoes 1.1s ease-in-out infinite}
+@keyframes zknervoes{
+  0%,100%{transform:translate(0,0) rotate(0)}
+  20%{transform:translate(-6px,3px) rotate(-1.5deg)}
+  45%{transform:translate(5px,-4px) rotate(1.5deg)}
+  70%{transform:translate(-3px,-2px) rotate(-1deg)}
+  85%{transform:translate(4px,2px) rotate(.8deg)}
+}
+
+/* ---------- Zeitlupe beim Matchball ---------- */
+.pitch.zeitlupe::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:4;
+  background:radial-gradient(ellipse 70% 60% at 50% 45%, rgba(255,255,255,.05), rgba(4,10,7,.4) 100%);
+  animation:zlblende .35s ease-out both;
+}
+@keyframes zlblende{from{opacity:0}to{opacity:1}}
+.pitch.zeitlupe .ola-sp,.pitch.zeitlupe .camflash{animation-play-state:paused}
+
+#net{transform-box:fill-box;transform-origin:50% 60%}
+#net.bulge{animation:netbulge .5s ease-out}
+@keyframes netbulge{
+  30%{transform:translateY(4px) scale(1.012,1.035)}
+  60%{transform:translateY(1px) scale(1.004,1.012)}
+  100%{transform:none}
+}
+
+/* Torwart */
+#keeper{
+  transform-box:fill-box;transform-origin:center;
+  transition:transform .42s cubic-bezier(.22,.95,.36,1.04);
+  pointer-events:none;
+}
+#keeper.sway{animation:ksway 1.7s ease-in-out infinite}
+@keyframes ksway{
+  0%,100%{transform:translateX(-8px) translateY(0)}
+  25%{transform:translateX(0) translateY(2px)}
+  50%{transform:translateX(8px) translateY(0)}
+  75%{transform:translateX(0) translateY(2px)}
+}
+
+/* Schütze */
+#shooter{
+  transform-box:fill-box;transform-origin:50% 92%;
+  transform:translate(70px,3px);pointer-events:none;
+}
+#shooter.run{animation:runup .55s ease-in forwards}
+@keyframes runup{
+  0%  {transform:translate(70px,3px)}
+  18% {transform:translate(56px,-1px) rotate(-2deg)}
+  38% {transform:translate(42px,3px) rotate(-3deg)}
+  58% {transform:translate(27px,-1px) rotate(-4deg)}
+  78% {transform:translate(13px,3px) rotate(-5deg)}
+  100%{transform:translate(0px,2px) rotate(-8deg)}
+}
+#shooter.joy{animation:joy 1s ease-in-out 1 both}
+@keyframes joy{
+  0%{transform:translate(0,2px)}
+  22%{transform:translate(0,-15px)}
+  46%{transform:translate(0,2px)}
+  68%{transform:translate(0,-9px)}
+  100%{transform:translate(0,2px)}
+}
+#legR{transform-box:fill-box;transform-origin:50% 4%;transition:transform .12s ease-out}
+#shArmLg,#shArmRg{transform-box:fill-box;transition:transform .28s cubic-bezier(.3,1.3,.5,1)}
+#shArmLg{transform-origin:100% 0%}
+#shArmRg{transform-origin:0% 0%}
+#shooter.celebrate #shArmLg{transform:rotate(160deg)}
+#shooter.celebrate #shArmRg{transform:rotate(-160deg)}
+.figname{
+  font-family:"Archivo Narrow",sans-serif;font-size:12px;font-weight:700;
+  fill:rgba(242,245,239,.85);pointer-events:none;
+}
+.kitnum{font-family:"Bebas Neue",sans-serif;pointer-events:none}
+
+/* Flitzer */
+#streaker{opacity:0;pointer-events:none}
+#streaker.go{opacity:1;animation:streak 2.5s linear forwards}
+@keyframes streak{from{transform:translateX(-70px)}to{transform:translateX(680px)}}
+#streaker .legA,#streaker .legB,#streaker .armA,#streaker .armB{transform-box:fill-box;transform-origin:top center}
+#streaker.go .legA{animation:limb .2s ease-in-out infinite alternate}
+#streaker.go .legB{animation:limb .2s ease-in-out infinite alternate-reverse}
+#streaker.go .armA{animation:limbS .2s ease-in-out infinite alternate-reverse}
+#streaker.go .armB{animation:limbS .2s ease-in-out infinite alternate}
+@keyframes limb{from{transform:rotate(-32deg)}to{transform:rotate(32deg)}}
+@keyframes limbS{from{transform:rotate(-22deg)}to{transform:rotate(22deg)}}
+
+/* Staub */
+.dust{transform-box:fill-box;animation:dustp .55s ease-out forwards}
+@keyframes dustp{from{opacity:.55}to{opacity:0;transform:translateY(-9px) scale(2.2)}}
+
+/* Ball + Schatten */
+.ball{
+  position:absolute;width:30px;height:30px;border-radius:50%;
+  background:radial-gradient(circle at 32% 30%, #ffffff 0 35%, #c9cdc6 70%, #8e948c 100%);
+  box-shadow:0 3px 8px rgba(0,0,0,.45), inset -3px -4px 6px rgba(0,0,0,.25);
+  transform:translate(-50%,-50%);
+  pointer-events:none;opacity:0;z-index:3;
+}
+.ball.live{opacity:1}
+.ballshadow{
+  position:absolute;width:26px;height:9px;border-radius:50%;
+  background:rgba(0,0,0,.4);filter:blur(2px);
+  transform:translate(-50%,-50%);
+  pointer-events:none;opacity:0;z-index:2;
+}
+
+/* ---------- Konfetti ---------- */
+.confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:4}
+.confetti span{
+  position:absolute;top:-22px;width:9px;height:15px;border-radius:2px;opacity:.95;
+  animation:fall linear forwards;
+}
+@keyframes fall{to{transform:translateY(480px) rotate(740deg);opacity:.75}}
+
+/* ---------- Resultat-Banner ---------- */
+.banner{
+  position:absolute;top:8px;left:0;right:0;z-index:5;
+  text-align:center;pointer-events:none;
+  font-family:"Bebas Neue",sans-serif;font-size:clamp(26px,5vw,40px);
+  letter-spacing:.1em;text-shadow:0 2px 12px rgba(0,0,0,.75);
+}
+.banner.pop{animation:bpop .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes bpop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+.banner.goal{color:var(--gruen)}
+.banner.stop{color:var(--rot)}
+
+.next-btn{
+  display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  z-index:5;font:inherit;font-size:15px;font-weight:700;
+  background:var(--panel);color:var(--kreide);
+  border:1px solid rgba(242,245,239,.45);border-radius:10px;
+  padding:8px 22px;cursor:pointer;backdrop-filter:blur(3px);
+}
+.again-btn{
+  display:none;margin:14px auto 0;
+  font:inherit;font-size:17px;font-weight:700;
+  background:transparent;color:var(--kreide);
+  border:1px solid rgba(242,245,239,.4);border-radius:10px;
+  padding:10px 26px;cursor:pointer;
+}
+.next-btn:hover,.again-btn:hover{border-color:var(--gold)}
+.next-btn.show,.again-btn.show{display:block}
+
+.keys-hint{
+  text-align:center;font-size:12px;color:var(--kreide-dim);
+  margin-top:8px;line-height:1.5;
+}
+.keys-hint b{color:var(--kreide)}
+
+/* ---------- Sieger ---------- */
+.winner{text-align:center;padding:40px 20px 60px;position:relative;overflow:hidden}
+.winner .flag{display:flex;justify-content:center}
+.winner .wname{
+  font-family:"Bebas Neue",sans-serif;font-size:clamp(36px,7vw,64px);
+  letter-spacing:.08em;color:var(--gold);margin-top:10px;
+}
+.winner .wscore{font-size:21px;color:var(--kreide-dim);margin-top:6px}
+.siu{
+  font-family:"Bebas Neue",sans-serif;font-size:clamp(44px,9vw,84px);
+  letter-spacing:.06em;color:var(--gruen);margin-top:4px;
+  animation:siupop .7s cubic-bezier(.2,1.5,.4,1) both;
+}
+@keyframes siupop{
+  0%{transform:scale(.15) rotate(-8deg);opacity:0}
+  65%{transform:scale(1.18) rotate(2deg);opacity:1}
+  100%{transform:scale(1) rotate(0)}
+}
+#winFigBox{margin:6px auto 0;width:200px}
+.winplayer{font-size:17px;font-weight:700;margin-top:2px}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* ---------- WM: Frage beim Start ---------- */
+.wm-frage{
+  margin-top:18px;padding:16px 18px;
+  background:rgba(240,197,72,.10);
+  border:1px solid rgba(240,197,72,.45);border-radius:12px;
+}
+.wm-frage-txt{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-size:16px;line-height:1.5;margin-bottom:14px;
+}
+.wm-frage-txt b{color:var(--gold)}
+.wm-frage-btn{display:flex;gap:12px;flex-wrap:wrap}
+.start-btn.schmal{width:auto;flex:1;min-width:200px;margin-top:0;font-size:21px;padding:12px 20px}
+.start-btn.hell{background:transparent;color:var(--kreide);border:1px solid rgba(242,245,239,.45)}
+
+/* ---------- WM: Band über dem Scoreboard ---------- */
+.wm-band{
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  margin-top:14px;padding:8px 14px;
+  background:rgba(240,197,72,.12);border:1px solid rgba(240,197,72,.4);
+  border-radius:10px;text-align:center;
+}
+.wm-band .runde{
+  font-family:"Bebas Neue",sans-serif;font-size:22px;letter-spacing:.1em;color:var(--gold);
+}
+.wm-band .info{font-size:14px;color:var(--kreide-dim)}
+
+/* ---------- WM: Turnierbaum ---------- */
+.wm-kopf{text-align:center;margin:22px 0 14px}
+.wm-titel{
+  font-family:"Bebas Neue",sans-serif;font-size:clamp(28px,5vw,46px);
+  letter-spacing:.08em;color:var(--gold);line-height:1;
+}
+.wm-unter{font-size:15px;color:var(--kreide-dim);margin-top:6px;line-height:1.5}
+.baum-scroll{
+  overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+  padding:4px 2px 10px;
+}
+.baum{display:flex;gap:10px;min-width:660px}
+.baum-sp{flex:1;min-width:112px;display:flex;flex-direction:column}
+.baum-tit{
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold);text-align:center;margin-bottom:8px;
+}
+.baum-partien{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:6px}
+.partie{
+  background:var(--panel);border:1px solid rgba(242,245,239,.14);
+  border-radius:8px;overflow:hidden;
+}
+.partie.ist-mein{border-color:var(--gold);box-shadow:0 0 0 1px rgba(240,197,72,.5)}
+.pz{
+  display:flex;align-items:center;gap:5px;padding:4px 6px;
+  font-size:12px;line-height:1.1;
+}
+.pz + .pz{border-top:1px solid rgba(242,245,239,.10)}
+.pz b{flex:1;font-weight:700;letter-spacing:.02em}
+.pz .pt{
+  font-family:"Bebas Neue",sans-serif;font-size:17px;
+  min-width:14px;text-align:right;color:var(--kreide-dim);
+}
+.pz.sieger{background:rgba(76,217,123,.12)}
+.pz.sieger .pt{color:var(--gruen)}
+.pz.sieger b{color:var(--kreide)}
+.pz.mein b{color:var(--gold)}
+.pz.leer{opacity:.35}
+.pz.leer b{color:var(--kreide-dim)}
+.fl-leer{
+  width:17px;height:11px;border-radius:2px;flex:none;
+  border:1px dashed rgba(242,245,239,.35);
+}
+.sp-pokal .baum-partien{justify-content:center}
+.pokal-feld{
+  text-align:center;padding:10px 6px;
+  background:var(--panel);border:1px solid rgba(240,197,72,.35);border-radius:10px;
+}
+.pokal-feld.ist-mein{border-color:var(--gold);background:rgba(240,197,72,.14)}
+.pokal-feld .flag-svg{margin:6px auto 0}
+.pokal-mini{display:flex;justify-content:center}
+.pokal-land{font-size:12px;font-weight:700;margin-top:5px}
+.pokal-mini.blass,.pokal-land.blass{opacity:.3}
+.pokal-svg{width:auto;height:auto;flex:none;display:block}
+.wm-aktion{margin-top:8px}
+.wm-links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.link-btn{
+  background:transparent;border:none;color:var(--kreide-dim);
+  font:inherit;font-size:14px;text-decoration:underline;
+  padding:10px 14px;cursor:pointer;min-height:44px;
+}
+.link-btn:hover{color:var(--gold)}
+
+/* ---------- Pokalübergabe ---------- */
+.pokal-buehne{
+  text-align:center;padding:26px 20px 50px;position:relative;overflow:hidden;
+}
+.pokal-jubel{
+  font-family:"Bebas Neue",sans-serif;font-size:clamp(38px,8vw,76px);
+  letter-spacing:.08em;color:var(--gold);line-height:1;
+  text-shadow:0 0 26px rgba(240,197,72,.45);
+  animation:jubelpop .8s cubic-bezier(.2,1.5,.4,1) both;
+}
+@keyframes jubelpop{
+  0%{transform:scale(.2) rotate(-6deg);opacity:0}
+  70%{transform:scale(1.14) rotate(2deg);opacity:1}
+  100%{transform:scale(1) rotate(0)}
+}
+.pokal-buehne .flag{display:flex;justify-content:center;margin-top:10px}
+/* Der Pokal steht oben im eigenen Platz (padding-top), damit er weder
+   Flagge noch Teamname überdeckt. */
+.pokal-szene{
+  position:relative;width:230px;margin:6px auto 0;padding-top:104px;
+  display:flex;justify-content:center;
+}
+.pokal-fig{width:200px;height:auto;display:block}
+.pokal-hoch{
+  position:absolute;top:6px;left:50%;
+  transform:translateX(-50%);
+  animation:pokalauf 1.5s cubic-bezier(.25,1.25,.4,1) both;
+}
+@keyframes pokalauf{
+  0%{transform:translateX(-50%) translateY(210px) scale(.5);opacity:0}
+  45%{opacity:1}
+  70%{transform:translateX(-50%) translateY(-6px) scale(1.06)}
+  100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1}
+}
+.pokal-hoch .pokal-svg{filter:drop-shadow(0 0 18px rgba(240,197,72,.6))}
+
+/* ---------- Ausgeschieden: Trost-Screen ---------- */
+.trost{text-align:center;padding:34px 20px 50px}
+.trost-titel{
+  font-family:"Bebas Neue",sans-serif;font-size:clamp(28px,6vw,50px);
+  letter-spacing:.07em;color:var(--kreide);line-height:1.05;
+}
+.trost .flag{display:flex;justify-content:center;margin-top:14px;margin-bottom:8px}
+.trost .wname{color:var(--kreide)}
+.trost-txt{font-size:17px;line-height:1.6;margin-top:10px}
+.trost-weg{
+  display:inline-block;text-align:left;margin:18px auto 0;
+  background:var(--panel);border:1px solid rgba(242,245,239,.14);
+  border-radius:10px;padding:12px 16px;font-size:14.5px;line-height:1.9;
+}
+.trost-weg .zeile{display:flex;align-items:center;gap:8px}
+.trost-weg .rd{color:var(--kreide-dim);min-width:96px}
+.trost-weg .erg{font-family:"Bebas Neue",sans-serif;font-size:18px;margin-left:4px}
+.trost-weg .gewonnen .erg{color:var(--gruen)}
+.trost-weg .verloren .erg{color:var(--rot)}
+.trost-wm{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:15px;color:var(--kreide-dim);margin-top:16px;flex-wrap:wrap;
+}
+
+/* ---------- Tablet: Touch und Querformat ----------
+   Kein Doppeltipp-Zoom auf Spielflächen, grosse Tap-Flächen und im
+   Querformat soll die ganze Szene ohne Scrollen sichtbar sein. */
+.zone,button,.flag-card{touch-action:manipulation}
+.mode-btn,.start-btn,.next-btn,.again-btn,.snd-btn{min-height:44px}
+.flag-card{min-height:44px}
+@media (hover:none){
+  /* Ohne Maus gibt es kein Hover — die Auswahl ist über .sel/.selA/.selB
+     markiert, Hover ist nur Zusatz. */
+  .mode-btn:hover,.flag-card:hover{border-color:inherit}
+  .zone:hover{fill:transparent}
+}
+@media (orientation:landscape) and (max-height:760px){
+  body{padding:10px 14px 22px}
+  h1{font-size:clamp(24px,4vw,40px)}
+  .setup-card{padding:18px;margin-top:14px}
+  .board{margin:10px 0 4px;padding:8px 12px}
+  .pitch{max-width:min(640px,96vh)}
+  .keys-hint{margin-top:6px}
+  .wm-kopf{margin:12px 0 10px}
+}
+
+@media (prefers-reduced-motion: reduce){
+  #keeper,#shooter,#legR,#shArmLg,#shArmRg{transition:none;animation:none}
+  .confetti span,.zone.hit,.siu,#streaker.go,.pitch.shake,#net.bulge,.camflash,.dust{animation:none}
+  .pokal-jubel,.pokal-hoch{animation:none}
+  .ola-sp,.flutlicht,.zk-inner,#zielkreuz.nervoes .zk-inner{animation:none}
+  .pitch.zeitlupe::after{animation:none}
+}
