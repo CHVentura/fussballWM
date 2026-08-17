@@ -66,11 +66,21 @@
         </div>
       </div>
 
+      <!-- Aufgabe von heute -->
+      <div id="challBox"></div>
+
       <div class="label">Modus</div>
       <div class="mode-row">
         <button class="mode-btn sel" id="m2p" type="button">2 Spieler am gleichen Gerät</button>
         <button class="mode-btn" id="m1p" type="button">1 Spieler gegen Computer</button>
         <button class="mode-btn" id="mwm" type="button">Weltmeisterschaft 🏆</button>
+        <button class="mode-btn" id="mwm2" type="button">WM zu zweit 🏆🏆</button>
+      </div>
+
+      <!-- Wer ist Spieler 2 im Turnier zu zweit? -->
+      <div class="sp2-box" id="sp2Box" style="display:none">
+        <div class="label">Spieler 2</div>
+        <div class="sp2-liste" id="sp2Liste"></div>
       </div>
 
       <!-- Frage beim Start: gespeichertes Turnier weiterspielen? -->
@@ -426,6 +436,7 @@
 <script src="js/effekte.js"></script>
 <script src="js/profil.js"></script>
 <script src="js/turnier.js"></script>
+<script src="js/turnier2.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

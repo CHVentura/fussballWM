@@ -205,6 +205,95 @@ function pokalEintragen(teamIdx, gegnerIdx){
   profileSpeichern();
 }
 
+/* ====================================================================
+   Tages-Aufgabe — eine pro Tag und Profil
+   Sie wird aus Datum und Profilname berechnet, ist also nach einem
+   Neuladen dieselbe und für jedes Kind eine andere.
+   ==================================================================== */
+const CHALLENGES = [
+  {art:"schlage",  txt:p=>`Schlage ${TEAMS[p]} in einer Partie`},
+  {art:"serie",    txt:p=>`Triff ${p}-mal hintereinander`},
+  {art:"paraden",  txt:p=>`Halte ${p} Elfmeter in einer Partie`},
+  {art:"makellos", txt:()=>`Gewinne eine Partie ohne Fehlschuss`},
+  {art:"titel",    txt:()=>`Gewinne ein ganzes Turnier`}
+];
+/* Starke Gegner für die Aufgabe "Schlage …" */
+const CHALLENGE_GEGNER = [1, 3, 5, 6, 7, 8, 16, 17];
+
+function heuteStr(){
+  const d=new Date();
+  return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
+}
+function textZahl(s){
+  let n=0;
+  for(let i=0;i<s.length;i++) n=(n*31 + s.charCodeAt(i)) % 100000;
+  return n;
+}
+
+/* Aufgabe von heute holen, bei Bedarf neu erzeugen */
+function challengeHeute(){
+  const p=aktivProfil();
+  if(!p) return null;
+  const heute=heuteStr();
+  if(p.challenge && p.challenge.datum===heute) return p.challenge;
+
+  const n=textZahl(heute+"|"+p.name);
+  const vorlage=CHALLENGES[n % CHALLENGES.length];
+  let param=null;
+  if(vorlage.art==="schlage")  param=CHALLENGE_GEGNER[(n>>3) % CHALLENGE_GEGNER.length];
+  if(vorlage.art==="serie")    param=3 + ((n>>5) % 2);      // 3 oder 4
+  if(vorlage.art==="paraden")  param=2 + ((n>>7) % 2);      // 2 oder 3
+  p.challenge={datum:heute, art:vorlage.art, param:param, erfuellt:false};
+  profileSpeichern();
+  return p.challenge;
+}
+
+function challengeText(c){
+  if(!c) return "";
+  for(let i=0;i<CHALLENGES.length;i++){
+    if(CHALLENGES[i].art===c.art) return CHALLENGES[i].txt(c.param);
+  }
+  return "";
+}
+
+/* Prüfen, ob ein Ereignis die Aufgabe erfüllt */
+function challengePruefen(art, wert){
+  const c=challengeHeute();
+  if(!c || c.erfuellt || c.art!==art) return false;
+  if(c.param!=null){
+    const passt = (art==="schlage") ? (wert===c.param) : (wert>=c.param);
+    if(!passt) return false;
+  }
+  c.erfuellt=true;
+  statPlus("challenges");
+  profileSpeichern();
+  abzeichenGeben("tagesheld");
+  challengeMelden();
+  return true;
+}
+function challengeMelden(){
+  const box=$("abzeichenToast");
+  if(!box) return;
+  /* Nach der Abzeichen-Einblendung eine eigene Meldung */
+  setTimeout(()=>{
+    box.innerHTML=`<span class="az-emoji">⭐</span>`+
+      `<span class="az-text"><b>Tages-Aufgabe erfüllt!</b><small>Morgen gibt es eine neue.</small></span>`;
+    box.classList.add("show");
+    jingel();
+    setTimeout(()=>box.classList.remove("show"), 2600);
+  }, 3200);
+}
+
+/* Banner im Menü */
+function challengeHTML(){
+  const c=challengeHeute();
+  if(!c) return "";
+  return `<div class="chall${c.erfuellt?" fertig":""}">`+
+    `<span class="chall-icon">${c.erfuellt?"✅":"⭐"}</span>`+
+    `<span class="chall-txt"><b>Aufgabe von heute</b>`+
+    `<small>${challengeText(c)}${c.erfuellt?" — erledigt!":""}</small></span></div>`;
+}
+
 /* ---------------- Vitrine als HTML ---------------- */
 function vitrineHTML(){
   const p = aktivProfil();
@@ -248,6 +337,7 @@ function vitrineHTML(){
         <div><b>${s.serieBest}</b><small>beste Serie</small></div>
         <div><b>${s.turniere}</b><small>Turniere</small></div>
         <div><b>${s.laender.length}</b><small>Länder</small></div>
+        <div><b>${s.challenges||0}</b><small>Aufgaben</small></div>
       </div>
     </div>`;
 }

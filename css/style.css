@@ -436,6 +436,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   letter-spacing:.08em;color:var(--gold);line-height:1;
 }
 .wm-unter{font-size:15px;color:var(--kreide-dim);margin-top:6px;line-height:1.5}
+.duellwarn{color:var(--rot);letter-spacing:.04em}
 .baum-scroll{
   overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
   padding:4px 2px 10px;
@@ -466,6 +467,24 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .pz.sieger .pt{color:var(--gruen)}
 .pz.sieger b{color:var(--kreide)}
 .pz.mein b{color:var(--gold)}
+/* Zwei-Spieler-Turnier: Spieler 1 gold, Spieler 2 blau */
+.pz.mein2 b{color:#7fb4ff}
+.partie.ist-mein2{border-color:#7fb4ff;box-shadow:0 0 0 1px rgba(127,180,255,.5)}
+.partie.ist-duell{
+  border-color:var(--rot);
+  box-shadow:0 0 0 1px rgba(224,85,72,.6), 0 0 14px rgba(224,85,72,.35);
+}
+
+/* Spieler-2-Auswahl */
+.sp2-box{margin-top:6px}
+.sp2-liste{display:flex;gap:8px;flex-wrap:wrap}
+.sp2-btn{
+  background:transparent;color:var(--kreide);
+  border:1px solid rgba(242,245,239,.3);border-radius:10px;
+  padding:11px 18px;font:inherit;font-size:16px;cursor:pointer;min-height:44px;
+}
+.sp2-btn.sel{background:rgba(127,180,255,.18);border-color:#7fb4ff}
+.sp2-hinweis{font-size:14px;color:var(--kreide-dim);line-height:1.5}
 .pz.leer{opacity:.35}
 .pz.leer b{color:var(--kreide-dim)}
 .fl-leer{
@@ -620,6 +639,22 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   letter-spacing:0;color:var(--kreide-dim);font-weight:500;
 }
 .prof-kopf-btn{display:flex;gap:4px;flex-wrap:wrap}
+
+/* ---------- Tages-Aufgabe ---------- */
+.chall{
+  display:flex;align-items:center;gap:11px;
+  background:rgba(240,197,72,.10);
+  border:1px solid rgba(240,197,72,.4);border-radius:11px;
+  padding:11px 15px;margin-bottom:18px;
+}
+.chall.fertig{background:rgba(76,217,123,.12);border-color:rgba(76,217,123,.5)}
+.chall-icon{font-size:24px;line-height:1;flex:none}
+.chall-txt b{
+  display:block;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold);
+}
+.chall.fertig .chall-txt b{color:var(--gruen)}
+.chall-txt small{display:block;font-size:15px;line-height:1.4;margin-top:2px}
 
 /* ---------- Vitrine ---------- */
 .vitrine{display:flex;flex-direction:column;gap:16px}

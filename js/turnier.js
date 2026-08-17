@@ -211,16 +211,19 @@ function gewichtetWaehlen(liste, gewichte){
 /* Zonen, die der Computer-Torwart abdeckt.
    Mit der Wahrscheinlichkeit "lernen" nimmt er eine Zone, in die ich
    bisher oft geschossen habe — deshalb wird er von Runde zu Runde besser. */
-function wmKeeperZonen(){
-  const cfg=WM_RUNDEN[turnier.runde];
+/* Allgemein: Zonen für den Computer-Torwart in einer bestimmten Runde,
+   gegen einen Schützen mit dieser Schussstatistik. So kann auch das
+   Zwei-Spieler-Turnier dieselbe Stärkekurve nutzen. */
+function keeperZonenFuerRunde(runde, schussStat){
+  const cfg=WM_RUNDEN[runde] || WM_RUNDEN[0];
   const anzahl=cfg.zonen + (Math.random()<cfg.extraZone ? 1 : 0);
   const frei=[0,1,2,3,4,5,6,7,8];
   const out=[];
-  const kenntMich=turnier.schuss.some(v=>v>0);
+  const kenntMich=schussStat && schussStat.some(v=>v>0);
   while(out.length<anzahl && frei.length){
     let z;
     if(kenntMich && Math.random()<cfg.lernen){
-      z=gewichtetWaehlen(frei, frei.map(k=>turnier.schuss[k]+0.4));
+      z=gewichtetWaehlen(frei, frei.map(k=>schussStat[k]+0.4));
     } else {
       z=zufallAus(frei);
     }
@@ -229,17 +232,23 @@ function wmKeeperZonen(){
   }
   return out;
 }
+function wmKeeperZonen(){
+  return keeperZonenFuerRunde(turnier.runde, turnier.schuss);
+}
 
 /* Zone, in die der Computer schiesst, wenn ich im Tor stehe.
    Er merkt sich, welche Ecken ich selten decke. */
-function wmSchussZone(){
-  const cfg=WM_RUNDEN[turnier.runde];
+function schussZoneFuerRunde(runde, deckStat){
+  const cfg=WM_RUNDEN[runde] || WM_RUNDEN[0];
   const alle=[0,1,2,3,4,5,6,7,8];
-  if(turnier.deck.some(v=>v>0) && Math.random()<cfg.lernenSchuss){
-    const max=Math.max.apply(null, turnier.deck);
-    return gewichtetWaehlen(alle, alle.map(z=>(max-turnier.deck[z])+0.4));
+  if(deckStat && deckStat.some(v=>v>0) && Math.random()<cfg.lernenSchuss){
+    const max=Math.max.apply(null, deckStat);
+    return gewichtetWaehlen(alle, alle.map(z=>(max-deckStat[z])+0.4));
   }
   return zufall(9);
+}
+function wmSchussZone(){
+  return schussZoneFuerRunde(turnier.runde, turnier.deck);
 }
 
 /* ---------------- Turnierbaum als HTML ---------------- */
