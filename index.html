@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elfmeterschiessen — WM 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>ELFMETERSCHIESSEN<span class="sub">WM 2026 · USA — KANADA — MEXIKO</span></h1>
+
+  <!-- ============ SETUP ============ -->
+  <section id="scr-setup" class="screen active">
+    <div class="setup-card">
+      <div class="label">Modus</div>
+      <div class="mode-row">
+        <button class="mode-btn sel" id="m2p" type="button">2 Spieler am gleichen Gerät</button>
+        <button class="mode-btn" id="m1p" type="button">1 Spieler gegen Computer</button>
+      </div>
+
+      <div class="label" id="pickLbl">Länder wählen — zuerst Team 1, dann Team 2</div>
+      <div class="flag-grid" id="grid"></div>
+
+      <button class="start-btn" id="startBtn" type="button">ANSTOSS</button>
+
+      <p class="hint">
+        Ablauf pro Elfmeter: Der Torwart wählt verdeckt <b>3 Zonen</b> (Tasten 1–9, Nummernblock-Layout),
+        danach wählt der Schütze <b>1 Zone</b>. Trifft der Schütze eine abgedeckte Zone, hält der Torwart —
+        sonst ist es ein Tor. Klassisches Format: 5 Schüsse pro Team, danach Sudden Death.
+        Jedes Land tritt mit seinem bekanntesten Schützen im Heimtrikot an.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ SPIEL ============ -->
+  <section id="scr-game" class="screen">
+    <div class="board">
+      <div class="team">
+        <div class="name" id="nameA"></div>
+        <div class="ticks" id="ticksA"></div>
+      </div>
+      <div class="score"><span id="scoreA">0</span> : <span id="scoreB">0</span></div>
+      <div class="team">
+        <div class="name" id="nameB"></div>
+        <div class="ticks" id="ticksB"></div>
+      </div>
+      <button class="snd-btn" id="sndBtn" type="button" title="Sound an/aus">🔊</button>
+    </div>
+
+    <div class="status">
+      <div class="who" id="stWho"></div>
+      <div class="what" id="stWhat"></div>
+      <div class="secret" id="secret" style="display:none"><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="pitch">
+      <svg id="goal" viewBox="0 0 600 400" aria-label="Tor mit 9 Zonen">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#060d09"/>
+            <stop offset="1" stop-color="#0d2417"/>
+          </linearGradient>
+          <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1a4f31"/>
+            <stop offset="1" stop-color="#236842"/>
+          </linearGradient>
+          <linearGradient id="gJersey" x1="0" y1="0" x2="0.85" y2="1">
+            <stop offset="0" id="gJ1" stop-color="#ffd96a"/>
+            <stop offset="1" id="gJ2" stop-color="#b8901f"/>
+          </linearGradient>
+          <linearGradient id="gKeep" x1="0" y1="0" x2="0.85" y2="1">
+            <stop offset="0" stop-color="#3fd0bd"/>
+            <stop offset="1" stop-color="#177568"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Stadion-Hintergrund -->
+        <rect x="0" y="0" width="600" height="252" fill="url(#sky)"/>
+        <rect x="0" y="0" width="600" height="128" fill="#0c1812"/>
+        <g id="crowd"></g>
+        <polygon points="70,0 10,0 190,140 230,140" fill="rgba(240,197,72,.055)"/>
+        <polygon points="530,0 590,0 410,140 370,140" fill="rgba(240,197,72,.055)"/>
+
+        <!-- Rasen -->
+        <rect x="0" y="250" width="600" height="150" fill="url(#grass)"/>
+        <polygon points="0,290 600,290 600,322 0,322" fill="rgba(0,0,0,.07)"/>
+        <polygon points="0,354 600,354 600,400 0,400" fill="rgba(0,0,0,.07)"/>
+        <line x1="40" y1="400" x2="120" y2="252" stroke="rgba(242,245,239,.06)" stroke-width="2"/>
+        <line x1="560" y1="400" x2="480" y2="252" stroke="rgba(242,245,239,.06)" stroke-width="2"/>
+        <rect x="0" y="250" width="600" height="3" fill="rgba(242,245,239,.55)"/>
+        <ellipse cx="300" cy="346" rx="7" ry="3.5" fill="rgba(242,245,239,.8)"/>
+
+        <!-- Tor-Tiefe -->
+        <g opacity=".9">
+          <polygon points="65,25 122,62 122,250 65,252" fill="rgba(242,245,239,.045)"/>
+          <polygon points="535,25 478,62 478,250 535,252" fill="rgba(242,245,239,.045)"/>
+          <polygon points="65,25 535,25 478,62 122,62" fill="rgba(242,245,239,.05)"/>
+          <line x1="65" y1="25" x2="122" y2="62" stroke="rgba(242,245,239,.35)" stroke-width="2"/>
+          <line x1="535" y1="25" x2="478" y2="62" stroke="rgba(242,245,239,.35)" stroke-width="2"/>
+          <line x1="122" y1="62" x2="478" y2="62" stroke="rgba(242,245,239,.3)" stroke-width="2"/>
+          <line x1="122" y1="62" x2="122" y2="250" stroke="rgba(242,245,239,.25)" stroke-width="2"/>
+          <line x1="478" y1="62" x2="478" y2="250" stroke="rgba(242,245,239,.25)" stroke-width="2"/>
+        </g>
+        <g id="net"></g>
+
+        <!-- Pfosten/Latte -->
+        <rect x="60" y="20" width="10" height="232" rx="4" fill="#f2f5ef"/>
+        <rect x="530" y="20" width="10" height="232" rx="4" fill="#f2f5ef"/>
+        <rect x="60" y="20" width="480" height="10" rx="4" fill="#f2f5ef"/>
+
+        <!-- Zonen -->
+        <g id="zones"></g>
+
+        <!-- Torwart (Frontansicht) -->
+        <g id="keeper" class="sway">
+          <g id="keeperFlagG" transform="translate(289.5,135) scale(0.7)"></g>
+          <ellipse cx="300" cy="251" rx="21" ry="5" fill="rgba(0,0,0,.32)"/>
+          <!-- Beine: Stutzen + Schuhe -->
+          <line x1="294" y1="226" x2="291" y2="245" stroke="#177568" stroke-width="7.5" stroke-linecap="round"/>
+          <line x1="306" y1="226" x2="309" y2="245" stroke="#177568" stroke-width="7.5" stroke-linecap="round"/>
+          <ellipse cx="289" cy="248" rx="7" ry="4" fill="#111"/>
+          <ellipse cx="311" cy="248" rx="7" ry="4" fill="#111"/>
+          <!-- Hose -->
+          <path d="M289 214 q11 4 22 0 l1 12 q-4 3 -8 0 l-4 -6 -4 6 q-4 3 -8 0 z" fill="#143832"/>
+          <!-- Oberkörper -->
+          <path d="M287 181 q13 -9 26 0 l2 34 q-15 6 -30 0 z" fill="url(#gKeep)" stroke="#0e4d44" stroke-width=".6"/>
+          <ellipse cx="294" cy="195" rx="6" ry="11" fill="#fff" opacity=".09" transform="rotate(-14 294 195)"/>
+          <text class="kitnum" x="300" y="206" text-anchor="middle" font-size="14" fill="#06322b">1</text>
+          <!-- Arme: Trikot + Unterarm + Handschuhe -->
+          <line x1="291" y1="187" x2="280" y2="198" stroke="#2bb3a3" stroke-width="7.5" stroke-linecap="round"/>
+          <line x1="309" y1="187" x2="320" y2="198" stroke="#2bb3a3" stroke-width="7.5" stroke-linecap="round"/>
+          <line x1="280" y1="198" x2="269" y2="208" stroke="#d9a06e" stroke-width="6" stroke-linecap="round"/>
+          <line x1="320" y1="198" x2="331" y2="208" stroke="#d9a06e" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="267" cy="210" r="6" fill="#ececec" stroke="#999" stroke-width=".8"/>
+          <circle cx="333" cy="210" r="6" fill="#ececec" stroke="#999" stroke-width=".8"/>
+          <!-- Kopf -->
+          <rect x="296" y="176" width="8" height="6" rx="2" fill="#d9a06e"/>
+          <circle cx="300" cy="168" r="11" fill="#d9a06e"/>
+          <path d="M289 165 q11 -10 22 0 l0 -5 q-11 -9 -22 0 z" fill="#2c2c2c"/>
+          <circle cx="296" cy="168" r="1.3" fill="#222"/>
+          <circle cx="304" cy="168" r="1.3" fill="#222"/>
+        </g>
+
+        <!-- Flitzer -->
+        <g id="streaker">
+          <g>
+            <ellipse cx="0" cy="334" rx="15" ry="4" fill="rgba(0,0,0,.3)"/>
+            <circle cx="0" cy="288" r="9" fill="#e8b88a"/>
+            <path d="M-9 285 q9 -8 18 0 l0 -4 q-9 -7 -18 0 z" fill="#3a2a1a"/>
+            <line class="armA" x1="-4" y1="300" x2="-16" y2="316" stroke="#e8b88a" stroke-width="6" stroke-linecap="round"/>
+            <line class="armB" x1="4" y1="300" x2="16" y2="316" stroke="#e8b88a" stroke-width="6" stroke-linecap="round"/>
+            <rect x="-8" y="296" width="16" height="22" rx="7" fill="#e8b88a"/>
+            <rect x="-11" y="313" width="22" height="8" rx="3" fill="#111"/>
+            <line class="legA" x1="-4" y1="320" x2="-9" y2="333" stroke="#e8b88a" stroke-width="7" stroke-linecap="round"/>
+            <line class="legB" x1="4" y1="320" x2="9" y2="333" stroke="#e8b88a" stroke-width="7" stroke-linecap="round"/>
+          </g>
+        </g>
+
+        <!-- Schütze (Rückenansicht) -->
+        <g id="shooter">
+          <g id="shooterFlagG" transform="translate(317.5,231) scale(0.7)"></g>
+          <text id="shName" class="figname" x="328" y="376" text-anchor="middle"></text>
+          <ellipse cx="328" cy="359" rx="25" ry="6" fill="rgba(0,0,0,.32)"/>
+          <!-- Bein links: Oberschenkel (Haut), Stutzen, Schuh -->
+          <line id="shThighL" x1="322" y1="322" x2="317" y2="336" stroke="#e8b88a" stroke-width="8" stroke-linecap="round"/>
+          <line id="shSockL" x1="317" y1="336" x2="312" y2="353" stroke="#1c2f55" stroke-width="7" stroke-linecap="round"/>
+          <ellipse cx="310" cy="356" rx="7" ry="4" fill="#111"/>
+          <!-- Bein rechts (Schussbein) -->
+          <g id="legR">
+            <line id="shThighR" x1="334" y1="322" x2="339" y2="336" stroke="#e8b88a" stroke-width="8" stroke-linecap="round"/>
+            <line id="shSockR" x1="339" y1="336" x2="343" y2="351" stroke="#1c2f55" stroke-width="7" stroke-linecap="round"/>
+            <ellipse cx="345" cy="353" rx="7" ry="4" fill="#111"/>
+          </g>
+          <!-- Hose -->
+          <path id="shShorts" d="M312 311 q16 6 32 0 l-2 14 q-5 4 -10 1 l-4 -7 -4 7 q-5 3 -10 -1 z" fill="#1c2f55"/>
+          <!-- Oberkörper mit Rückennummer -->
+          <path id="shBody" d="M310 284 q18 -10 36 0 l-2 30 q-16 7 -32 0 z" fill="url(#gJersey)" stroke="rgba(0,0,0,.25)" stroke-width=".6"/>
+          <ellipse cx="319" cy="296" rx="7" ry="13" fill="#fff" opacity=".10" transform="rotate(-15 319 296)"/>
+          <text id="shNum" class="kitnum" x="328" y="308" text-anchor="middle" font-size="16" fill="#fff"></text>
+          <!-- Arme: Ärmel (Trikot) + Unterarm (Haut) -->
+          <g id="shArmLg">
+            <line id="shSleeveL" x1="313" y1="288" x2="306" y2="299" stroke="#f0c548" stroke-width="8" stroke-linecap="round"/>
+            <line id="shForeL" x1="306" y1="299" x2="300" y2="313" stroke="#e8b88a" stroke-width="6" stroke-linecap="round"/>
+          </g>
+          <g id="shArmRg">
+            <line id="shSleeveR" x1="343" y1="288" x2="350" y2="299" stroke="#f0c548" stroke-width="8" stroke-linecap="round"/>
+            <line id="shForeR" x1="350" y1="299" x2="356" y2="311" stroke="#e8b88a" stroke-width="6" stroke-linecap="round"/>
+          </g>
+          <!-- Kopf (Hinterkopf), Ohren, Haare -->
+          <rect x="324" y="276" width="8" height="6" rx="2" fill="#e8b88a"/>
+          <circle id="shHead" cx="328" cy="268" r="12" fill="#e8b88a"/>
+          <circle id="shEarL" cx="316.5" cy="269" r="2.6" fill="#e8b88a"/>
+          <circle id="shEarR" cx="339.5" cy="269" r="2.6" fill="#e8b88a"/>
+          <g id="shHair"></g>
+        </g>
+
+        <g id="fx"></g>
+      </svg>
+      <div class="ballshadow" id="ballshadow"></div>
+      <div class="ball" id="ball"></div>
+      <div class="banner" id="banner"></div>
+      <button class="next-btn" id="nextBtn" type="button">Weiter ⏎</button>
+    </div>
+
+    <p class="keys-hint">
+      Zonen-Tasten (Nummernblock-Layout): <b>7 8 9</b> oben · <b>4 5 6</b> Mitte · <b>1 2 3</b> unten —
+      Zahlenreihe funktioniert ebenfalls. Klick/Tipp auf eine Zone geht auch (Torwart: besser Tastatur, verdeckt).
+    </p>
+  </section>
+
+  <!-- ============ SIEGER ============ -->
+  <section id="scr-win" class="screen">
+    <div class="winner" id="winnerBox">
+      <div class="flag" id="winFlag"></div>
+      <div class="wname" id="winName"></div>
+      <div class="siu" id="siuText" style="display:none">SIUUUUU!</div>
+      <div id="winFigBox">
+        <svg id="winFig" viewBox="0 0 200 220"></svg>
+      </div>
+      <div class="winplayer" id="winPlayer"></div>
+      <div class="wscore" id="winScore"></div>
+      <button class="again-btn show" id="againBtn" type="button">Neues Spiel</button>
+    </div>
+  </section>
+</div>
+
+<!-- Ladereihenfolge ist relevant: core → daten → ton → figuren → effekte → spiel -->
+<script src="js/core.js"></script>
+<script src="js/teams.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/figuren.js"></script>
+<script src="js/effekte.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
