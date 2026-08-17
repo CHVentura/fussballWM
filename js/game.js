@@ -109,7 +109,7 @@ function show(name){
 const zonesG=$("zones");
 const zoneEls=[];
 (function buildScene(){
-  buildCrowd();
+  buildCrowd(selIdxA, selIdxB);
   buildNet();
   const numForZone=z=>Object.keys(KEY2ZONE).find(k=>KEY2ZONE[k]===z);
   for(let z=0;z<9;z++){
@@ -136,6 +136,7 @@ function startGame(){
   kicksA=[]; kicksB=[]; shootIsA=true; sudden=false;
   $("nameA").innerHTML=flagHTML(teamA.idx,13)+`<span>${teamA.name}</span>`;
   $("nameB").innerHTML=flagHTML(teamB.idx,13)+`<span>${teamB.name}</span>`;
+  buildCrowd(teamA.idx, teamB.idx);   // Ränge in den Farben der zwei Teams
   renderWmBand();
   show("game");
   renderBoard();
@@ -158,6 +159,8 @@ function nextKick(){
   document.querySelectorAll(".confetti").forEach(c=>c.remove());
   $("streaker").classList.remove("go");
   $("fx").innerHTML="";
+  versteckeZielkreuz();
+  zeitlupeAus();
 
   const keeper=$("keeper"), shooter=$("shooter");
   keeper.style.transition="none"; keeper.style.transform="";
@@ -183,10 +186,12 @@ function nextKick(){
     phase="shooter";
     whistle();
     const wieViele = keeperZones.length;
+    const matchball = istMatchball();
     setStatus(curShooter().idx, `${shooterPlayer().p} — Schütze`,
-      mode==="wm"
+      (matchball ? "Matchball! " : "") + (mode==="wm"
         ? `Der Torwart deckt ${wieViele} Zonen ab. Wähle deine Zone (1–9).`
-        : "Der Computer-Torwart steht. Wähle deine Zone (1–9).", false);
+        : "Der Computer-Torwart steht. Wähle deine Zone (1–9)."), false);
+    zeigeZielkreuz(anspannung());
   } else {
     setStatus(curKeeperTeam().idx, `${curKeeperTeam().name} — Torwart`,
       shooterIsComputer
@@ -240,7 +245,9 @@ function handleZone(z){
         const ziel = (mode==="wm") ? wmSchussZone() : zufall(9);
         setTimeout(()=>resolveShot(ziel), 600);
       } else {
-        setStatus(curShooter().idx, `${shooterPlayer().p} — Schütze`,"Wähle deine Zone (1–9).",false);
+        setStatus(curShooter().idx, `${shooterPlayer().p} — Schütze`,
+          istMatchball() ? "Matchball — wähle deine Zone (1–9)!" : "Wähle deine Zone (1–9).", false);
+        zeigeZielkreuz(anspannung());
       }
     }
   } else if(phase==="shooter"){
@@ -248,11 +255,39 @@ function handleZone(z){
   }
 }
 
+/* ----- Matchball und Anspannung -----
+   Matchball: dieser Schuss kann die Partie entscheiden — egal ob Tor
+   oder Fehlschuss. Dann läuft der Ball in Zeitlupe.
+   Anspannung: ab Halbfinal oder bei Matchball wackelt das Zielkreuz. */
+function wuerdeEntscheiden(treffer){
+  const a0=kicksA.slice(), b0=kicksB.slice();
+  (shootIsA?a0:b0).push(treffer);
+  const a=a0.filter(Boolean).length, b=b0.filter(Boolean).length;
+  const na=a0.length, nb=b0.length;
+  if(na<=5 && nb<=5){
+    return a > b+(5-nb) || b > a+(5-na);
+  }
+  if(na===nb && na>5) return a!==b;
+  return false;
+}
+function istMatchball(){
+  return wuerdeEntscheiden(true) || wuerdeEntscheiden(false);
+}
+function anspannung(){
+  const spaeteRunde = (mode==="wm" && turnier && turnier.runde>=2);
+  return spaeteRunde || istMatchball();
+}
+
 /* ----- Auswertung + Animation ----- */
 function resolveShot(z){
   phase="anim";
   $("secret").style.display="none";
+  versteckeZielkreuz();
   setStatus(curShooter().idx, shooterPlayer().p, "Anlauf …", false);
+
+  /* Beim Matchball läuft alles knapp doppelt so langsam */
+  const matchball = istMatchball();
+  const zeit = matchball ? 1.9 : 1;
 
   const covered = keeperZones.includes(z);
   const goal = !covered;
@@ -282,11 +317,13 @@ function resolveShot(z){
     setTimeout(()=>{ legR.style.transform="rotate(-16deg)"; },130);
     // Ball kurz stauchen, dann Flug
     ball.style.transform="translate(-50%,-50%) scale(1.22,0.78)";
-    diveKeeper(z, covered);
+    if(matchball) zeitlupeAn();
+    diveKeeper(z, covered, zeit);
 
     setTimeout(()=>{
-      flyBall(zoneCenterSVG(z), {dur:460, endScale:0.58, arc:65, groundEnd:255}, ()=>{
+      flyBall(zoneCenterSVG(z), {dur:Math.round(460*zeit), endScale:0.58, arc:65, groundEnd:255}, ()=>{
         phase="result";
+        zeitlupeAus();
         keeperZones.forEach(k=>zoneEls[k].classList.add("kept"));
         const banner=$("banner");
         banner.classList.remove("pop"); void banner.offsetWidth;
@@ -335,10 +372,13 @@ function resolveShot(z){
   }, 540);
 }
 
-/* Torwart-Hechtsprung mit Landung und Staub */
-function diveKeeper(z, covered){
+/* Torwart-Hechtsprung mit Landung und Staub.
+   zeit > 1 verlangsamt den Sprung passend zur Zeitlupe. */
+function diveKeeper(z, covered, zeit){
+  const f = zeit || 1;
   const keeper=$("keeper");
   keeper.classList.remove("sway");
+  if(f!==1) keeper.style.transitionDuration=(0.42*f).toFixed(2)+"s";
   let targetZone = covered ? z : zufallAus(keeperZones);
   const c=zoneCenterSVG(targetZone);
   const dx=c.x-KEEPER_REF.x, dy=c.y-KEEPER_REF.y;
@@ -351,7 +391,7 @@ function diveKeeper(z, covered){
   keeper.style.transform=`translate(${dx}px,${dy}px) rotate(${rot}deg)`;
 
   setTimeout(()=>{
-    keeper.style.transition="transform .3s cubic-bezier(.55,0,.8,.55)";
+    keeper.style.transition=`transform ${(0.3*f).toFixed(2)}s cubic-bezier(.55,0,.8,.55)`;
     if(rot!==0){
       keeper.style.transform=`translate(${(dx*1.04).toFixed(1)}px,36px) rotate(${Math.sign(rot)*92}deg)`;
     } else {
@@ -360,8 +400,8 @@ function diveKeeper(z, covered){
     setTimeout(()=>{
       keeper.style.transition="";
       spawnDust(KEEPER_REF.x+dx*1.04);
-    }, 310);
-  }, 440);
+    }, 310*f);
+  }, 440*f);
 }
 
 /* ----- Weiter-Knopf mit Rücklauf ----- */

@@ -5,21 +5,46 @@
    alles andere möglichst über CSS-Animationen (schonend fürs Tablet).
    ==================================================================== */
 
-/* ---------- Zuschauerränge (einmal beim Laden aufgebaut) ---------- */
-function buildCrowd(){
-  const crowdG=$("crowd");
-  let dots="";
-  for(let i=0;i<260;i++){
-    const x=Math.random()*600, y=8+Math.random()*108;
-    const c=["#8a9","#a98","#99a","#aa8","#888"][zufall(5)];
-    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="${c}" opacity="${(0.15+Math.random()*0.3).toFixed(2)}"/>`;
+/* ---------- Zuschauerränge ----------
+   Die Menge steht in 30 Spalten. Jede Spalte ist eine eigene Gruppe mit
+   versetzter Animationsverzögerung — dadurch läuft alle paar Sekunden
+   eine La-Ola durch das Stadion, komplett über CSS (billig fürs Tablet).
+   Die Farbtupfer sind die Trikotfarben der beiden Teams. */
+const CROWD_SPALTEN = 30;
+const CROWD_PRO_SPALTE = 11;
+
+function crowdPalette(idxA, idxB){
+  const p=[];
+  [idxA, idxB].forEach(i=>{
+    if(i==null) return;
+    const j=PLAYERS[i].jersey;
+    p.push(j, j, shade(j, 0.28), shade(j, -0.22));
+  });
+  p.push("#8a9c92","#9a9a8e","#8e94a0");   // neutrale Zuschauer
+  return p;
+}
+
+function buildCrowd(idxA, idxB){
+  const farben=crowdPalette(idxA, idxB);
+  const breite=600/CROWD_SPALTEN;
+  let html="";
+  for(let s=0;s<CROWD_SPALTEN;s++){
+    let punkte="";
+    for(let k=0;k<CROWD_PRO_SPALTE;k++){
+      const x=s*breite + 2 + Math.random()*(breite-4);
+      const y=8 + Math.random()*108;
+      const c=farben[zufall(farben.length)];
+      const o=(0.30+Math.random()*0.45).toFixed(2);
+      punkte+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.6" fill="${c}" opacity="${o}"/>`;
+    }
+    html+=`<g class="ola-sp" style="animation-delay:${(s*0.14).toFixed(2)}s">${punkte}</g>`;
   }
   // Fotoblitze in der Menge
   for(let i=0;i<12;i++){
     const x=Math.random()*600, y=8+Math.random()*108;
-    dots+=`<circle class="camflash" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="#fff" style="animation-duration:${(2.6+Math.random()*4).toFixed(1)}s;animation-delay:${(Math.random()*4).toFixed(1)}s"/>`;
+    html+=`<circle class="camflash" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="#fff" style="animation-duration:${(2.6+Math.random()*4).toFixed(1)}s;animation-delay:${(Math.random()*4).toFixed(1)}s"/>`;
   }
-  crowdG.innerHTML=dots;
+  $("crowd").innerHTML=html;
 }
 
 /* ---------- Tornetz ---------- */
@@ -30,12 +55,20 @@ function buildNet(){
   $("net").innerHTML=net;
 }
 
-/* ---------- Ballflug ---------- */
+/* ---------- Ballflug ----------
+   Quadratische Kurve vom Elfmeterpunkt zur Zone, dazu ein leichter Effet
+   (seitliche Auslenkung, die in der Flugmitte am grössten ist) und ein
+   Schatten, der mit der Flughöhe kleiner und heller wird.
+   Läuft über requestAnimationFrame, nicht über Timer-Kaskaden. */
 function flyBall(targetSVG, opts, done){
   const {dur=460, endScale=0.58, arc=65, groundEnd=255}=opts||{};
   const ball=$("ball"), shadow=$("ballshadow");
   const f=SPOT, tt=targetSVG;
   const cx=(f.x+tt.x)/2, cy=Math.min(f.y,tt.y)-arc;
+  /* Effet: der Ball dreht in die Richtung, in die er geschossen wird */
+  const effet = (opts && opts.effet!=null)
+    ? opts.effet
+    : (tt.x-f.x)*0.16 + (Math.random()*10-5);
   const t0=performance.now();
   ball.style.opacity="1"; ball.classList.add("live");
   shadow.style.opacity="0.45";
@@ -43,7 +76,8 @@ function flyBall(targetSVG, opts, done){
   function step(now){
     let u=Math.min(1,(now-t0)/dur);
     const e=1-Math.pow(1-u,1.7);
-    const x=(1-e)*(1-e)*f.x + 2*(1-e)*e*cx + e*e*tt.x;
+    const bogen=Math.sin(Math.PI*e);
+    const x=(1-e)*(1-e)*f.x + 2*(1-e)*e*cx + e*e*tt.x + effet*bogen;
     const y=(1-e)*(1-e)*f.y + 2*(1-e)*e*cy + e*e*tt.y;
     const p=s2p({x,y});
     ball.style.left=p.x+"px"; ball.style.top=p.y+"px";
@@ -121,6 +155,28 @@ function runStreaker(){
   st.classList.add("go");
   cheer();
   setTimeout(()=>st.classList.remove("go"), 2600);
+}
+
+/* ---------- Zielkreuz ----------
+   Reine Stimmungssache: zeigt, dass jetzt gezielt wird. Ab Halbfinal und
+   bei Matchball wackelt es — es verändert das Resultat nicht. */
+function zeigeZielkreuz(nervoes){
+  const zk=$("zielkreuz");
+  zk.style.display="";
+  zk.classList.toggle("nervoes", !!nervoes);
+}
+function versteckeZielkreuz(){
+  const zk=$("zielkreuz");
+  zk.style.display="none";
+  zk.classList.remove("nervoes");
+}
+
+/* ---------- Zeitlupe beim Matchball ---------- */
+function zeitlupeAn(){
+  document.querySelector(".pitch").classList.add("zeitlupe");
+}
+function zeitlupeAus(){
+  document.querySelector(".pitch").classList.remove("zeitlupe");
 }
 
 /* ---------- Konfetti ---------- */

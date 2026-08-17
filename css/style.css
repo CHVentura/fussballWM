@@ -170,6 +170,49 @@ h1 .sub{display:block;font-size:.38em;letter-spacing:.42em;color:var(--gold);mar
 .camflash{animation:cflash linear infinite;opacity:0}
 @keyframes cflash{0%,93%{opacity:0}95%{opacity:.95}100%{opacity:0}}
 
+/* ---------- Stadionkulisse ----------
+   La-Ola: jede Zuschauer-Spalte hat dieselbe Animation, nur zeitlich
+   versetzt (animation-delay im Markup). So läuft die Welle durchs
+   Stadion, ohne dass JavaScript pro Bild rechnen muss. */
+.ola-sp{
+  animation:ola 13s linear infinite;
+  will-change:transform;
+}
+@keyframes ola{
+  0%{transform:translateY(0)}
+  2%{transform:translateY(-7px)}
+  4.5%{transform:translateY(-2px)}
+  6.5%,100%{transform:translateY(0)}
+}
+/* Flutlicht atmet ganz langsam — nur Deckkraft, das ist günstig */
+.flutlicht{animation:flutpuls 9s ease-in-out infinite}
+@keyframes flutpuls{0%,100%{opacity:.88}50%{opacity:1}}
+
+/* ---------- Zielkreuz ---------- */
+.zk-inner{animation:zkruhig 5s ease-in-out infinite}
+@keyframes zkruhig{
+  0%,100%{transform:translate(0,0)}
+  33%{transform:translate(3px,-2px)}
+  66%{transform:translate(-2px,2px)}
+}
+#zielkreuz.nervoes .zk-inner{animation:zknervoes 1.1s ease-in-out infinite}
+@keyframes zknervoes{
+  0%,100%{transform:translate(0,0) rotate(0)}
+  20%{transform:translate(-6px,3px) rotate(-1.5deg)}
+  45%{transform:translate(5px,-4px) rotate(1.5deg)}
+  70%{transform:translate(-3px,-2px) rotate(-1deg)}
+  85%{transform:translate(4px,2px) rotate(.8deg)}
+}
+
+/* ---------- Zeitlupe beim Matchball ---------- */
+.pitch.zeitlupe::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:4;
+  background:radial-gradient(ellipse 70% 60% at 50% 45%, rgba(255,255,255,.05), rgba(4,10,7,.4) 100%);
+  animation:zlblende .35s ease-out both;
+}
+@keyframes zlblende{from{opacity:0}to{opacity:1}}
+.pitch.zeitlupe .ola-sp,.pitch.zeitlupe .camflash{animation-play-state:paused}
+
 #net{transform-box:fill-box;transform-origin:50% 60%}
 #net.bulge{animation:netbulge .5s ease-out}
 @keyframes netbulge{
@@ -473,8 +516,32 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   font-size:15px;color:var(--kreide-dim);margin-top:16px;flex-wrap:wrap;
 }
 
+/* ---------- Tablet: Touch und Querformat ----------
+   Kein Doppeltipp-Zoom auf Spielflächen, grosse Tap-Flächen und im
+   Querformat soll die ganze Szene ohne Scrollen sichtbar sein. */
+.zone,button,.flag-card{touch-action:manipulation}
+.mode-btn,.start-btn,.next-btn,.again-btn,.snd-btn{min-height:44px}
+.flag-card{min-height:44px}
+@media (hover:none){
+  /* Ohne Maus gibt es kein Hover — die Auswahl ist über .sel/.selA/.selB
+     markiert, Hover ist nur Zusatz. */
+  .mode-btn:hover,.flag-card:hover{border-color:inherit}
+  .zone:hover{fill:transparent}
+}
+@media (orientation:landscape) and (max-height:760px){
+  body{padding:10px 14px 22px}
+  h1{font-size:clamp(24px,4vw,40px)}
+  .setup-card{padding:18px;margin-top:14px}
+  .board{margin:10px 0 4px;padding:8px 12px}
+  .pitch{max-width:min(640px,96vh)}
+  .keys-hint{margin-top:6px}
+  .wm-kopf{margin:12px 0 10px}
+}
+
 @media (prefers-reduced-motion: reduce){
   #keeper,#shooter,#legR,#shArmLg,#shArmRg{transition:none;animation:none}
   .confetti span,.zone.hit,.siu,#streaker.go,.pitch.shake,#net.bulge,.camflash,.dust{animation:none}
   .pokal-jubel,.pokal-hoch{animation:none}
+  .ola-sp,.flutlicht,.zk-inner,#zielkreuz.nervoes .zk-inner{animation:none}
+  .pitch.zeitlupe::after{animation:none}
 }
