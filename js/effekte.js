@@ -17,7 +17,7 @@ function crowdPalette(idxA, idxB){
   const p=[];
   [idxA, idxB].forEach(i=>{
     if(i==null) return;
-    const j=PLAYERS[i].jersey;
+    const j=KITS[i].jersey;
     p.push(j, j, shade(j, 0.28), shade(j, -0.22));
   });
   p.push("#8a9c92","#9a9a8e","#8e94a0");   // neutrale Zuschauer

@@ -16,6 +16,11 @@ let keeperZones = [];
 let shootIsA = true;
 let sudden = false;
 let lastDive = {dx:0, rot:0};
+/* Schützenreihenfolge pro Team: jeder Spieler kommt einmal dran, bevor
+   einer zum zweiten Mal antritt (wie in den echten Regeln). */
+let schuetzeNr = {A:0, B:0};
+/* Wer für ein Team zuletzt getroffen hat — für den Sieger-Screen */
+let letzterTreffer = {A:null, B:null};
 
 /* Spiele ich gegen den Computer? (Einzelspieler und Turnier) */
 function gegenComputer(){ return mode==="1p" || mode==="wm"; }
@@ -31,7 +36,7 @@ const gridEl=$("grid"), gridCards=[];
 TEAMS.forEach((n,i)=>{
   const card=document.createElement("div");
   card.className="flag-card";
-  card.innerHTML=flagHTML(i,14)+`<span>${n}<small>${PLAYERS[i].p}</small></span><span class="badge"></span>`;
+  card.innerHTML=flagHTML(i,14)+`<span>${n}<small>${stern(i).p}</small></span><span class="badge"></span>`;
   card.onclick=()=>{
     if(mode==="wm"){
       selIdxA=i;                 // im Turnier wähle ich nur mein eigenes Team
@@ -134,6 +139,8 @@ const zoneEls=[];
 /* ====================== Spielablauf ====================== */
 function startGame(){
   kicksA=[]; kicksB=[]; shootIsA=true; sudden=false;
+  schuetzeNr={A:0, B:0};
+  letzterTreffer={A:null, B:null};
   $("nameA").innerHTML=flagHTML(teamA.idx,13)+`<span>${teamA.name}</span>`;
   $("nameB").innerHTML=flagHTML(teamB.idx,13)+`<span>${teamB.name}</span>`;
   buildCrowd(teamA.idx, teamB.idx);   // Ränge in den Farben der zwei Teams
@@ -145,7 +152,14 @@ function startGame(){
 
 function curShooter(){ return shootIsA?teamA:teamB; }
 function curKeeperTeam(){ return shootIsA?teamB:teamA; }
-function shooterPlayer(){ return PLAYERS[curShooter().idx]; }
+function shooterPlayer(){
+  const nr = (shootIsA ? schuetzeNr.A : schuetzeNr.B) % KADER_GROESSE;
+  return kaderVoll(curShooter().idx)[nr];
+}
+/* Wievielter Schütze des Teams ist gerade dran (1 … 11) */
+function schuetzePos(){
+  return ((shootIsA ? schuetzeNr.A : schuetzeNr.B) % KADER_GROESSE) + 1;
+}
 function score(arr){ return arr.filter(Boolean).length; }
 
 function nextKick(){
@@ -172,7 +186,7 @@ function nextKick(){
   keeper.classList.add("sway");
   $("keeperFlagG").innerHTML=flagInner(curKeeperTeam().idx)+flagFrame();
   $("shooterFlagG").innerHTML=flagInner(curShooter().idx)+flagFrame();
-  applyShooterLook(curShooter().idx);
+  applyShooterLook(curShooter().idx, shooterPlayer());
 
   keeperZones=[];
   phase="keeper";
@@ -187,7 +201,7 @@ function nextKick(){
     whistle();
     const wieViele = keeperZones.length;
     const matchball = istMatchball();
-    setStatus(curShooter().idx, `${shooterPlayer().p} — Schütze`,
+    setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,
       (matchball ? "Matchball! " : "") + (mode==="wm"
         ? `Der Torwart deckt ${wieViele} Zonen ab. Wähle deine Zone (1–9).`
         : "Der Computer-Torwart steht. Wähle deine Zone (1–9)."), false);
@@ -241,11 +255,11 @@ function handleZone(z){
       whistle();
       const shooterIsComputer=(gegenComputer() && !shootIsA);
       if(shooterIsComputer){
-        setStatus(curShooter().idx, `${shooterPlayer().p} — Schütze`,"Der Computer läuft an …",false);
+        setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,"Der Computer läuft an …",false);
         const ziel = (mode==="wm") ? wmSchussZone() : zufall(9);
         setTimeout(()=>resolveShot(ziel), 600);
       } else {
-        setStatus(curShooter().idx, `${shooterPlayer().p} — Schütze`,
+        setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,
           istMatchball() ? "Matchball — wähle deine Zone (1–9)!" : "Wähle deine Zone (1–9).", false);
         zeigeZielkreuz(anspannung());
       }
@@ -288,6 +302,7 @@ function resolveShot(z){
   /* Beim Matchball läuft alles knapp doppelt so langsam */
   const matchball = istMatchball();
   const zeit = matchball ? 1.9 : 1;
+  const schuetze = shooterPlayer();
 
   const covered = keeperZones.includes(z);
   const goal = !covered;
@@ -354,6 +369,9 @@ function resolveShot(z){
         }
 
         (shootIsA?kicksA:kicksB).push(goal);
+        const seite = shootIsA ? "A" : "B";
+        if(goal) letzterTreffer[seite]=schuetze;
+        schuetzeNr[seite]++;              // nächster Schütze ist dran
         renderBoard(true);
 
         const result = checkDecided();
@@ -461,12 +479,12 @@ function showWinner(side){
   }
 
   const t = side==="A"?teamA:teamB;
-  const pl=PLAYERS[t.idx];
+  const pl = letzterTreffer[side] || stern(t.idx);
   $("winFlag").innerHTML=flagHTML(t.idx,56);
   $("winName").textContent=`${t.name} gewinnt!`;
   $("winScore").textContent=`${teamA.name} ${score(kicksA)} : ${score(kicksB)} ${teamB.name}` + (sudden?" — nach Sudden Death":"");
   $("winPlayer").textContent=pl.p;
-  drawWinFig(t.idx);
+  drawWinFig(t.idx, pl);
   const siu=$("siuText");
   siu.style.display="none";
   show("win");
@@ -660,7 +678,7 @@ function pokalZeigen(){
   const idx=turnier.meinIdx;
   $("pokalFlag").innerHTML=flagHTML(idx,56);
   $("pokalName").textContent=TEAMS[idx];
-  $("pokalPlayer").textContent=PLAYERS[idx].p+" hebt den Pokal";
+  $("pokalPlayer").textContent=stern(idx).p+" hebt den Pokal";
   $("pokalWeg").innerHTML=`<div class="trost-weg">${wegHTML()}</div>`;
   drawPokalSzene(idx);
   show("pokal");

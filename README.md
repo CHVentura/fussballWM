@@ -79,7 +79,11 @@ nicht da.
 
 ## Kleine Extras
 
-- Jedes Land spielt mit seinem bekanntesten Schützen im Heimtrikot.
+- Jedes Land hat einen **Kader mit 11 Schützen**. Sie kommen der Reihe nach dran
+  — genau wie im echten Fussball darf keiner zweimal schiessen, solange nicht
+  alle einmal angetreten sind. Die ersten fünf sind bekannte Nationalspieler,
+  die weiteren treten mit ihrer Rückennummer an.
+- Auf dem Sieger-Bild jubelt der Spieler, der den letzten Treffer erzielt hat.
 - Die Zuschauer tragen die Farben der zwei Mannschaften — und alle paar
   Sekunden läuft eine **La-Ola** durch das Stadion.
 - Manchmal rennt ein **Flitzer** über den Platz.

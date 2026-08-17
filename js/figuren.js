@@ -44,9 +44,20 @@ function hairFront(style, c, cx, cy, r){
   return cap;
 }
 
-/* Schütze in den Farben des gewählten Landes einkleiden */
-function applyShooterLook(idx){
-  const pl=PLAYERS[idx];
+/* Spieler und Landestrikot zu einem Datensatz zusammenfassen.
+   Ohne Spieler wird der erste Schütze des Landes genommen. */
+function figurDaten(idx, spieler){
+  const s = spieler || stern(idx);
+  const k = KITS[idx];
+  return {
+    p:s.p, num:s.num, skin:s.skin, hair:s.hair, style:s.style,
+    jersey:k.jersey, shorts:k.shorts, socks:k.socks
+  };
+}
+
+/* Schütze einkleiden: Aussehen vom Spieler, Farben vom Land */
+function applyShooterLook(idx, spieler){
+  const pl=figurDaten(idx, spieler);
   $("gJ1").setAttribute("stop-color", shade(pl.jersey, 0.22));
   $("gJ2").setAttribute("stop-color", shade(pl.jersey, -0.28));
   $("shHead").setAttribute("fill",pl.skin);
@@ -98,8 +109,8 @@ function pokalSVG(hoehe){
 }
 
 /* Zeremonie: Siegerfigur hebt den Pokal in die Höhe */
-function drawPokalSzene(idx){
-  const pl=PLAYERS[idx];
+function drawPokalSzene(idx, spieler){
+  const pl=figurDaten(idx, spieler);
   const numC=contrastOn(pl.jersey);
   $("pokalSzene").innerHTML=`
     <div class="pokal-hoch">${pokalSVG(120)}</div>
@@ -136,8 +147,8 @@ function drawPokalSzene(idx){
 }
 
 /* Jubelnde Siegerfigur auf dem Sieger-Screen */
-function drawWinFig(idx){
-  const pl=PLAYERS[idx];
+function drawWinFig(idx, spieler){
+  const pl=figurDaten(idx, spieler);
   const numC=contrastOn(pl.jersey);
   $("winFig").innerHTML=`
     <defs>
