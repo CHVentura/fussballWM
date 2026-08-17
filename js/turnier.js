@@ -6,8 +6,6 @@
    damit ein Turnier über mehrere Tage weitergeht.
    ==================================================================== */
 
-const WM_KEY = "elfmeter-wm-turnier-v1";
-
 /* Die vier Runden. Pro Runde wird der Gegner stärker:
    - zonen       : Zonen, die der Computer-Torwart immer abdeckt
    - extraZone   : Wahrscheinlichkeit für eine zusätzliche Zone
@@ -25,23 +23,27 @@ const WM_RUNDEN = [
 /* Aktueller Turnierstand (null = kein Turnier) */
 let turnier = null;
 
-/* ---------------- Speichern und Laden ---------------- */
+/* ---------------- Speichern und Laden ----------------
+   Der Turnierstand liegt im aktiven Profil (siehe profil.js), damit
+   jedes Kind sein eigenes Turnier hat. */
 function wmLaden(){
-  try{
-    const raw = localStorage.getItem(WM_KEY);
-    if(!raw) return null;
-    const t = JSON.parse(raw);
-    if(!t || t.version !== 1 || typeof t.meinIdx !== "number") return null;
-    if(!Array.isArray(t.runden) || !t.runden.length) return null;
-    return t;
-  }catch(e){ return null; }
+  const p = aktivProfil();
+  const t = p && p.turnier;
+  if(!t || t.version !== 1 || typeof t.meinIdx !== "number") return null;
+  if(!Array.isArray(t.runden) || !t.runden.length) return null;
+  return t;
 }
 function wmSpeichern(){
-  if(!turnier) return;
-  try{ localStorage.setItem(WM_KEY, JSON.stringify(turnier)); }catch(e){}
+  const p = aktivProfil();
+  if(!p || !turnier) return;
+  p.turnier = turnier;
+  profileSpeichern();
 }
 function wmLoeschen(){
-  try{ localStorage.removeItem(WM_KEY); }catch(e){}
+  const p = aktivProfil();
+  if(!p) return;
+  p.turnier = null;
+  profileSpeichern();
 }
 
 /* ---------------- Auslosung ---------------- */
@@ -73,6 +75,8 @@ function wmNeu(meinIdx){
     schuss: new Array(9).fill(0),   // wohin ich schiesse
     deck:   new Array(9).fill(0)    // welche Zonen ich als Torwart decke
   };
+  statPlus("turniere");
+  landGespielt(meinIdx);
   wmSpeichern();
   return turnier;
 }

@@ -12,9 +12,60 @@
 <div class="wrap">
   <h1>ELFMETERSCHIESSEN<span class="sub">WM 2026 · USA — KANADA — MEXIKO</span></h1>
 
-  <!-- ============ SETUP ============ -->
-  <section id="scr-setup" class="screen active">
+  <!-- ============ PROFILWAHL ============ -->
+  <section id="scr-profil" class="screen active">
     <div class="setup-card">
+      <div class="label">Wer spielt?</div>
+      <div class="prof-liste" id="profListe"></div>
+
+      <div class="prof-neu" id="profNeu">
+        <div class="label">Neues Profil</div>
+        <input class="prof-input" id="profName" type="text" maxlength="14"
+               placeholder="Name" autocomplete="off">
+        <div class="prof-modus">
+          <button class="mode-btn sel" id="profAnf" type="button">
+            Anfänger<small>Zone wählen, fertig</small>
+          </button>
+          <button class="mode-btn" id="profPro" type="button">
+            Profi<small>mit Schuss-Timing</small>
+          </button>
+        </div>
+        <button class="start-btn" id="profAnlegenBtn" type="button">PROFIL ANLEGEN</button>
+      </div>
+
+      <p class="hint">
+        Jedes Profil hat eigene Pokale, eigene Abzeichen und ein eigenes Turnier.
+        <b>Anfänger</b>: du wählst nur die Ecke. <b>Profi</b>: dazu ein Kraftbalken —
+        im richtigen Moment tippen, sonst geht der Ball daneben. Das lässt sich
+        später jederzeit umstellen.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ VITRINE ============ -->
+  <section id="scr-vitrine" class="screen">
+    <div class="wm-kopf">
+      <div class="wm-titel" id="vitTitel">Vitrine</div>
+      <div class="wm-unter" id="vitUnter"></div>
+    </div>
+    <div class="vitrine" id="vitrine"></div>
+    <div class="wm-links">
+      <button class="link-btn" id="vitZurueckBtn" type="button">Zurück</button>
+    </div>
+  </section>
+
+  <!-- ============ SETUP ============ -->
+  <section id="scr-setup" class="screen">
+    <div class="setup-card">
+      <div class="prof-kopf">
+        <div class="prof-wer" id="profWer"></div>
+        <div class="prof-kopf-btn">
+          <button class="link-btn" id="vitrineBtn" type="button">🏆 Vitrine</button>
+          <button class="link-btn" id="modusBtn" type="button"></button>
+          <button class="link-btn" id="profWechselBtn" type="button">Profil wechseln</button>
+        </div>
+      </div>
+
       <div class="label">Modus</div>
       <div class="mode-row">
         <button class="mode-btn sel" id="m2p" type="button">2 Spieler am gleichen Gerät</button>
@@ -66,6 +117,7 @@
       <div class="who" id="stWho"></div>
       <div class="what" id="stWhat"></div>
       <div class="secret" id="secret" style="display:none"><span></span><span></span><span></span></div>
+      <div class="serie-anz" id="serieAnz" style="display:none"></div>
     </div>
 
     <div class="pitch">
@@ -348,12 +400,16 @@
   </section>
 </div>
 
-<!-- Ladereihenfolge ist relevant: core → daten → ton → figuren → effekte → turnier → spiel -->
+<!-- Einblendung für neue Abzeichen -->
+<div class="az-toast" id="abzeichenToast"></div>
+
+<!-- Ladereihenfolge ist relevant: core → daten → ton → figuren → effekte → profil → turnier → spiel -->
 <script src="js/core.js"></script>
 <script src="js/teams.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/figuren.js"></script>
 <script src="js/effekte.js"></script>
+<script src="js/profil.js"></script>
 <script src="js/turnier.js"></script>
 <script src="js/game.js"></script>
 </body>

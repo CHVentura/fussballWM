@@ -21,14 +21,21 @@ let lastDive = {dx:0, rot:0};
 let schuetzeNr = {A:0, B:0};
 /* Wer für ein Team zuletzt getroffen hat — für den Sieger-Screen */
 let letzterTreffer = {A:null, B:null};
+/* Trefferserie pro Team und Paraden in dieser Partie (für Abzeichen) */
+let serie = {A:0, B:0};
+let paradenPartie = 0;
+
+/* Das Profil spielt immer als Team A — im Zweispieler-Modus ist das
+   Spieler 1. Statistik und Abzeichen zählen für diese Seite. */
+function meineSeite(){ return "A"; }
 
 /* Spiele ich gegen den Computer? (Einzelspieler und Turnier) */
 function gegenComputer(){ return mode==="1p" || mode==="wm"; }
 
 /* ====================== DOM ====================== */
 const scr = {
-  setup:$("scr-setup"), game:$("scr-game"), win:$("scr-win"),
-  wm:$("scr-wm"), pokal:$("scr-pokal"), aus:$("scr-aus")
+  profil:$("scr-profil"), setup:$("scr-setup"), game:$("scr-game"), win:$("scr-win"),
+  wm:$("scr-wm"), pokal:$("scr-pokal"), aus:$("scr-aus"), vitrine:$("scr-vitrine")
 };
 
 /* Setup: ein Flaggen-Raster, alle Länder auf einen Blick */
@@ -107,7 +114,76 @@ $("againBtn").onclick=()=>{
 function show(name){
   Object.values(scr).forEach(s=>s.classList.remove("active"));
   scr[name].classList.add("active");
-  document.querySelector("h1").style.display = name==="setup" ? "" : "none";
+  const titelZeigen = (name==="setup" || name==="profil");
+  document.querySelector("h1").style.display = titelZeigen ? "" : "none";
+  if(name==="setup") profilKopfZeigen();
+}
+
+/* ====================================================================
+   Profile: wer spielt, Vitrine, Anfänger oder Profi
+   ==================================================================== */
+function profilScreenZeigen(){
+  $("profListe").innerHTML = profilListeHTML();
+  [...document.querySelectorAll(".prof-karte")].forEach(k=>{
+    k.onclick=()=>{
+      profilWaehlen(k.getAttribute("data-name"));
+      initAudio();
+      nachProfilwahl();
+    };
+  });
+  $("profName").value="";
+  neuProfilModus = "anfaenger";
+  profilModusKnoepfe();
+  show("profil");
+}
+let neuProfilModus = "anfaenger";
+function profilModusKnoepfe(){
+  $("profAnf").classList.toggle("sel", neuProfilModus==="anfaenger");
+  $("profPro").classList.toggle("sel", neuProfilModus==="profi");
+}
+$("profAnf").onclick=()=>{ neuProfilModus="anfaenger"; profilModusKnoepfe(); };
+$("profPro").onclick=()=>{ neuProfilModus="profi";     profilModusKnoepfe(); };
+$("profAnlegenBtn").onclick=()=>{
+  profilAnlegen($("profName").value, neuProfilModus);
+  initAudio();
+  nachProfilwahl();
+};
+$("profName").addEventListener("keydown",e=>{
+  if(e.key==="Enter") $("profAnlegenBtn").click();
+});
+
+/* Nach der Profilwahl: offenes Turnier? Dann direkt in den WM-Modus. */
+function nachProfilwahl(){
+  turnier=null;
+  const t=wmLaden();
+  if(t) setMode("wm"); else setMode(mode);
+  show("setup");
+}
+
+function profilKopfZeigen(){
+  const p=aktivProfil();
+  if(!p) return;
+  $("profWer").innerHTML=`${p.name}<small>🏆 ${p.pokale.length} Pokale · 🏅 ${abzeichenAnzahl()} Abzeichen</small>`;
+  $("modusBtn").textContent = p.modus==="profi" ? "Modus: Profi" : "Modus: Anfänger";
+}
+$("modusBtn").onclick=()=>{
+  const neu=modusUmschalten();
+  profilKopfZeigen();
+  $("modusBtn").textContent = neu==="profi" ? "Modus: Profi" : "Modus: Anfänger";
+};
+$("profWechselBtn").onclick=()=>profilScreenZeigen();
+$("vitrineBtn").onclick=()=>vitrineZeigen();
+$("vitZurueckBtn").onclick=()=>show("setup");
+
+function vitrineZeigen(){
+  const p=aktivProfil();
+  if(!p) return;
+  $("vitTitel").textContent=`Vitrine von ${p.name}`;
+  $("vitUnter").textContent = p.pokale.length
+    ? `${p.pokale.length} ${p.pokale.length===1?"Pokal":"Pokale"} · ${abzeichenAnzahl()} von ${ABZEICHEN.length} Abzeichen`
+    : "Hier landet alles, was du gewinnst.";
+  $("vitrine").innerHTML=vitrineHTML();
+  show("vitrine");
 }
 
 /* ====================== Tor-SVG aufbauen ====================== */
@@ -141,6 +217,10 @@ function startGame(){
   kicksA=[]; kicksB=[]; shootIsA=true; sudden=false;
   schuetzeNr={A:0, B:0};
   letzterTreffer={A:null, B:null};
+  serie={A:0, B:0};
+  paradenPartie=0;
+  grooveTempo(104);
+  landGespielt(teamA.idx);
   $("nameA").innerHTML=flagHTML(teamA.idx,13)+`<span>${teamA.name}</span>`;
   $("nameB").innerHTML=flagHTML(teamB.idx,13)+`<span>${teamB.name}</span>`;
   buildCrowd(teamA.idx, teamB.idx);   // Ränge in den Farben der zwei Teams
@@ -188,6 +268,9 @@ function nextKick(){
   $("keeperFlagG").innerHTML=flagInner(curKeeperTeam().idx)+flagFrame();
   $("shooterFlagG").innerHTML=flagInner(curShooter().idx)+flagFrame();
   applyShooterLook(curShooter().idx, shooterPlayer());
+
+  /* Der Ball brennt nur, wenn das Team am Ball eine Serie hat */
+  ball.classList.toggle("feuer", serie[shootIsA?"A":"B"]>=3);
 
   keeperZones=[];
   phase="keeper";
@@ -375,6 +458,8 @@ function resolveShot(z){
         const seite = shootIsA ? "A" : "B";
         if(goal) letzterTreffer[seite]=schuetze;
         schuetzeNr[seite]++;              // nächster Schütze ist dran
+        serieBuchen(seite, goal);
+        statistikBuchen(seite, goal);
         renderBoard(true);
 
         const result = checkDecided();
@@ -391,6 +476,42 @@ function resolveShot(z){
       });
     }, 45);
   }, 540);
+}
+
+/* ----- Trefferserie -----
+   Ab drei Toren hintereinander brennt der Ball und die Trommeln
+   treiben an. Ein Fehlschuss setzt die Serie zurück. */
+function serieBuchen(seite, goal){
+  if(goal){
+    serie[seite]++;
+    if(seite===meineSeite()){
+      statBesteSerie(serie[seite]);
+      if(serie[seite]>=3) abzeichenGeben("hattrick");
+      if(serie[seite]>=5) abzeichenGeben("unaufhaltsam");
+    }
+    if(serie[seite]>=2) serieTon(serie[seite]-2);
+  } else {
+    serie[seite]=0;
+  }
+  /* Tempo aus der höchsten noch laufenden Serie — ein Fehlschuss des
+     Gegners darf meine Serie nicht ausbremsen */
+  const hoechste=Math.max(serie.A, serie.B);
+  grooveTempo(hoechste>=3 ? 104 + (hoechste-2)*10 : 104);
+  $("ball").classList.toggle("feuer", serie[seite]>=3 && goal);
+}
+
+/* ----- Statistik und Abzeichen ----- */
+function statistikBuchen(seite, goal){
+  if(seite===meineSeite()){
+    statPlus("schuesse");
+    if(goal) statPlus("tore");
+  } else if(!goal){
+    /* Der Gegner hat verschossen, während ich im Tor stand */
+    statPlus("paraden");
+    paradenPartie++;
+    if(paradenPartie>=3) abzeichenGeben("katze");
+  }
+  profileSpeichern();
 }
 
 /* Torwart-Hechtsprung mit Landung und Staub.
@@ -469,6 +590,14 @@ function checkDecided(){
 
 function showWinner(side){
   phase="over";
+  grooveTempo(104);
+
+  /* Abzeichen für die gewonnene Partie */
+  if(side===meineSeite()){
+    if(sudden) abzeichenGeben("nervenstark");
+    if(kicksA.length>=3 && score(kicksA)===kicksA.length) abzeichenGeben("makellos");
+  }
+  profileSpeichern();
 
   /* Im Turnier: Resultat eintragen, danach Turnierbaum oder Trost-Screen */
   if(mode==="wm" && turnier && turnier.status==="laufend"){
@@ -512,6 +641,19 @@ function renderBoard(pop){
   }
   renderTicks($("ticksA"), kicksA, shootIsA && phase!=="over");
   renderTicks($("ticksB"), kicksB, !shootIsA && phase!=="over");
+  renderSerie();
+}
+
+/* Serienanzeige: erst ab zwei Treffern, ab drei mit Feuer */
+function renderSerie(){
+  const el=$("serieAnz");
+  const s=Math.max(serie.A, serie.B);
+  if(s<2 || phase==="over"){ el.style.display="none"; return; }
+  const wer = serie.A>=serie.B ? teamA : teamB;
+  const heiss = s>=3;
+  el.style.display="flex";
+  el.classList.toggle("heiss", heiss);
+  el.innerHTML=`${heiss?"🔥":"⚡"} ${s}er-Serie <small>${wer.name}</small>`;
 }
 function renderTicks(el, arr, active){
   const total=Math.max(5, arr.length + (active && arr.length>=5 ? 1 : 0));
@@ -625,6 +767,13 @@ function wmNachPartie(){
     wmBaumZeigen(`Weiter! Im ${wmRundenName(turnier.runde)} wartet ${TEAMS[g]}.`);
   } else {
     turnier.status="titel";
+    /* Pokal in die Vitrine — einmal pro Turnier */
+    if(!turnier.pokalGezaehlt){
+      turnier.pokalGezaehlt=true;
+      const weg=wmMeinWeg();
+      const finalGegner = weg.length ? weg[weg.length-1].gegner : null;
+      pokalEintragen(turnier.meinIdx, finalGegner);
+    }
     wmSpeichern();
     pokalZeigen();
   }
@@ -702,7 +851,14 @@ function pokalZeigen(){
 $("pokalNeuBtn").onclick=()=>{ wmNeu(turnier.meinIdx); wmBaumZeigen("Titelverteidigung — neu ausgelost!"); };
 $("pokalMenuBtn").onclick=()=>{ setMode("wm"); show("setup"); };
 
-/* ---------------- Beim Laden: offenes Turnier? ---------------- */
+/* ---------------- Beim Laden ----------------
+   Ohne Profil zuerst die Frage "Wer spielt?", sonst gleich ins Menü —
+   und wenn dieses Profil ein Turnier offen hat, in den WM-Modus. */
 (function beimStart(){
-  if(wmLaden()) setMode("wm");
+  if(!aktivProfil()){
+    profilScreenZeigen();
+    return;
+  }
+  if(wmLaden()) setMode("wm"); else setMode("2p");
+  show("setup");
 })();
