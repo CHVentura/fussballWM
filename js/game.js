@@ -175,6 +175,7 @@ function nextKick(){
   $("fx").innerHTML="";
   versteckeZielkreuz();
   zeitlupeAus();
+  kameraZurueck();
 
   const keeper=$("keeper"), shooter=$("shooter");
   keeper.style.transition="none"; keeper.style.transform="";
@@ -333,6 +334,7 @@ function resolveShot(z){
     // Ball kurz stauchen, dann Flug
     ball.style.transform="translate(-50%,-50%) scale(1.22,0.78)";
     if(matchball) zeitlupeAn();
+    kameraSchwenk(z, Math.round(520*zeit), false);
     diveKeeper(z, covered, zeit);
 
     setTimeout(()=>{
@@ -347,6 +349,7 @@ function resolveShot(z){
           banner.textContent="TOOOR!";
           banner.className="banner goal pop";
           netRipple(); pitchShake();
+          kameraSchwenk(z, 260, true);   // kurz näher ran
           cheer();
           shooter.style.transform="translate(0px,2px)";
           shooter.classList.add("celebrate","joy");

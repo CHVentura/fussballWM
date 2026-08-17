@@ -26,10 +26,20 @@ function zoneCenterSVG(z){
   return {x: GX + c * CW + CW / 2, y: GY + r * CH + CH / 2};
 }
 
-/* SVG-Koordinate → Pixel-Position innerhalb der .pitch-Box */
+/* SVG-Koordinate → Pixel-Position innerhalb der Szene.
+   Bewusst über die Layout-Grösse des Szenen-Wrappers und nicht über
+   getBoundingClientRect: die Szene ist im Raum gedreht, das gemessene
+   Rechteck wäre verzerrt und der Ball würde neben dem Tor landen. */
 function s2p(p){
-  const b = $("goal").getBoundingClientRect();
-  return {x: p.x * b.width / 600, y: p.y * b.height / 400};
+  const el = $("szeneAtem");
+  const w = el.offsetWidth || 600;
+  const h = el.offsetHeight || w * 400 / 600;
+  return {x: p.x * w / 600, y: p.y * h / 400};
+}
+
+/* Will der Nutzer wenig Bewegung? Dann bleibt die Kamera still. */
+function bewegungReduziert(){
+  return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }
 
 /* Zufallszahl 0 … n-1 */

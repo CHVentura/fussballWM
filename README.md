@@ -89,6 +89,9 @@ nicht da.
 - Manchmal rennt ein **Flitzer** über den Platz.
 - Der Ball fliegt mit **Effet**: er dreht leicht in die Richtung, in die
   geschossen wird.
+- Die Szene hat **Tiefe**: Ränge und Tor liegen räumlich hintereinander.
+  Beim Schuss lehnt sich die Kamera in die gewählte Ecke — die Ränge
+  wandern dabei anders als das Tor, wie im Fernsehen.
 
 ---
 
@@ -107,7 +110,7 @@ js/core.js          Helfer und Geometrie des Tors
 js/teams.js         Länder, Schützen, Flaggen, Spielstärken
 js/audio.js         Töne über die Web Audio API
 js/figuren.js       Spielerfiguren und WM-Pokal
-js/effekte.js       Kulisse, Ballflug, Konfetti, Zielkreuz
+js/effekte.js       Kulisse, Ballflug, Kamera, Konfetti, Zielkreuz
 js/turnier.js       WM-Modus: Auslosung, Simulation, Turnierbaum
 js/game.js          Spielablauf und Bildschirmwechsel
 archiv/             die ursprüngliche Einzeldatei

@@ -141,8 +141,42 @@ h1 .sub{display:block;font-size:.38em;letter-spacing:.42em;color:var(--gold);mar
   font-size:16px;color:var(--gold);
 }
 
-/* ---------- Szene ---------- */
-.pitch{position:relative;margin:4px auto 0;max-width:640px;overflow:hidden;border-radius:10px}
+/* ---------- Szene ----------
+   2.5D: .pitch gibt die Perspektive, darin liegen zwei Ebenen mit
+   unterschiedlichem Abstand (translateZ). Beim Kameraschwenk bewegen
+   sich die Ränge dadurch anders als das Tor — echte Parallaxe, ohne
+   dass etwas pro Bild gerechnet werden muss. */
+.pitch{
+  position:relative;margin:4px auto 0;max-width:640px;overflow:hidden;border-radius:10px;
+  perspective:1000px;perspective-origin:50% 42%;
+}
+.szene{
+  position:relative;transform-style:preserve-3d;
+  /* Keine Vergrösserung in Ruhe: sonst schneidet .pitch die Latte und
+     die obere Zonenreihe ab. Der Schwenk zoomt nur minimal. */
+  transform:none;
+  transition:transform .55s cubic-bezier(.25,.8,.3,1);
+  will-change:transform;
+}
+/* Ganz langsames Atmen der Kamera, damit die Szene räumlich wirkt */
+.szene-atem{position:relative;transform-style:preserve-3d;animation:atmen 17s ease-in-out infinite}
+@keyframes atmen{
+  0%,100%{transform:rotateY(-.7deg)}
+  50%{transform:rotateY(.7deg)}
+}
+/* Randabdunklung über beiden Ebenen (früher ein SVG-Rechteck) */
+.szene-atem::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 74% 74% at 50% 58%,
+    rgba(0,0,0,0) 45%, rgba(0,0,0,.22) 80%, rgba(0,0,0,.5) 100%);
+}
+/* Ferne Ebene: weiter hinten, darum leicht vergrössert, damit sie
+   trotz Perspektive das Bild füllt */
+.lage-fern{
+  position:absolute;inset:0;width:100%;height:auto;
+  transform:translateZ(-140px) scale(1.15);
+  pointer-events:none;
+}
 .pitch.shake{animation:pshake .4s}
 @keyframes pshake{
   0%,100%{transform:translate(0,0)}
@@ -154,6 +188,7 @@ h1 .sub{display:block;font-size:.38em;letter-spacing:.42em;color:var(--gold);mar
 /* Nur die grossen Szenen-SVG skalieren mit der Breite mit.
    Flaggen und Pokal behalten ihre eigene Grösse (width/height im SVG). */
 #goal,#winFig{display:block;width:100%;height:auto}
+#goal{position:relative}
 .zone{fill:transparent;stroke:var(--netz);stroke-width:1;cursor:pointer}
 .zone:hover{fill:rgba(242,245,239,.06)}
 .zone.kept{fill:rgba(240,197,72,.26)}
@@ -543,5 +578,8 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   .confetti span,.zone.hit,.siu,#streaker.go,.pitch.shake,#net.bulge,.camflash,.dust{animation:none}
   .pokal-jubel,.pokal-hoch{animation:none}
   .ola-sp,.flutlicht,.zk-inner,#zielkreuz.nervoes .zk-inner{animation:none}
+  .szene-atem{animation:none}
+  .szene{transition:none;transform:none}
+  .lage-fern{transform:none}
   .pitch.zeitlupe::after{animation:none}
 }

@@ -171,6 +171,36 @@ function versteckeZielkreuz(){
   zk.classList.remove("nervoes");
 }
 
+/* ---------- Kamera (2.5D) ----------
+   Die Kamera lehnt sich beim Schuss leicht in die gewählte Ecke. Weil
+   Ränge und Tor unterschiedlich weit hinten liegen, verschieben sie sich
+   dabei verschieden stark — das ergibt den räumlichen Eindruck.
+   Gerechnet wird nichts pro Bild: eine CSS-Transition macht die Bewegung. */
+const KAMERA_RUHE = "none";
+
+function kameraSchwenk(zone, dauerMs, naeher){
+  if(bewegungReduziert()){
+    /* Falls vorher geschwenkt wurde: Inline-Transform wieder freigeben,
+       damit die Regel aus dem Stylesheet greift */
+    $("szene").style.transform = "";
+    return;
+  }
+  const c = zoneCenterSVG(zone);
+  const ry = -((c.x - 300) / 230) * 3.5;      // seitlich, bis ±3.5 Grad
+  const rx = ((141 - c.y) / 111) * 1.6;       // hoch/tief, bis ±1.6 Grad
+  /* Sehr wenig Zoom — mehr würde Latte und obere Zonen abschneiden */
+  const zoom = naeher ? 1.035 : 1.02;
+  const sz = $("szene");
+  if(dauerMs) sz.style.transitionDuration = (dauerMs/1000).toFixed(2)+"s";
+  sz.style.transform =
+    `scale(${zoom}) rotateY(${ry.toFixed(2)}deg) rotateX(${rx.toFixed(2)}deg)`;
+}
+function kameraZurueck(){
+  const sz = $("szene");
+  sz.style.transitionDuration = "";
+  sz.style.transform = KAMERA_RUHE;
+}
+
 /* ---------- Zeitlupe beim Matchball ---------- */
 function zeitlupeAn(){
   document.querySelector(".pitch").classList.add("zeitlupe");
