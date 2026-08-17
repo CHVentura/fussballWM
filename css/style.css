@@ -151,7 +151,9 @@ h1 .sub{display:block;font-size:.38em;letter-spacing:.42em;color:var(--gold);mar
   60%{transform:translate(-3px,2px)}
   80%{transform:translate(2px,-1px)}
 }
-svg{display:block;width:100%;height:auto}
+/* Nur die grossen Szenen-SVG skalieren mit der Breite mit.
+   Flaggen und Pokal behalten ihre eigene Grösse (width/height im SVG). */
+#goal,#winFig{display:block;width:100%;height:auto}
 .zone{fill:transparent;stroke:var(--netz);stroke-width:1;cursor:pointer}
 .zone:hover{fill:rgba(242,245,239,.06)}
 .zone.kept{fill:rgba(240,197,72,.26)}
@@ -321,7 +323,158 @@ svg{display:block;width:100%;height:auto}
 .winplayer{font-size:17px;font-weight:700;margin-top:2px}
 button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
+/* ---------- WM: Frage beim Start ---------- */
+.wm-frage{
+  margin-top:18px;padding:16px 18px;
+  background:rgba(240,197,72,.10);
+  border:1px solid rgba(240,197,72,.45);border-radius:12px;
+}
+.wm-frage-txt{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-size:16px;line-height:1.5;margin-bottom:14px;
+}
+.wm-frage-txt b{color:var(--gold)}
+.wm-frage-btn{display:flex;gap:12px;flex-wrap:wrap}
+.start-btn.schmal{width:auto;flex:1;min-width:200px;margin-top:0;font-size:21px;padding:12px 20px}
+.start-btn.hell{background:transparent;color:var(--kreide);border:1px solid rgba(242,245,239,.45)}
+
+/* ---------- WM: Band über dem Scoreboard ---------- */
+.wm-band{
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  margin-top:14px;padding:8px 14px;
+  background:rgba(240,197,72,.12);border:1px solid rgba(240,197,72,.4);
+  border-radius:10px;text-align:center;
+}
+.wm-band .runde{
+  font-family:"Bebas Neue",sans-serif;font-size:22px;letter-spacing:.1em;color:var(--gold);
+}
+.wm-band .info{font-size:14px;color:var(--kreide-dim)}
+
+/* ---------- WM: Turnierbaum ---------- */
+.wm-kopf{text-align:center;margin:22px 0 14px}
+.wm-titel{
+  font-family:"Bebas Neue",sans-serif;font-size:clamp(28px,5vw,46px);
+  letter-spacing:.08em;color:var(--gold);line-height:1;
+}
+.wm-unter{font-size:15px;color:var(--kreide-dim);margin-top:6px;line-height:1.5}
+.baum-scroll{
+  overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+  padding:4px 2px 10px;
+}
+.baum{display:flex;gap:10px;min-width:660px}
+.baum-sp{flex:1;min-width:112px;display:flex;flex-direction:column}
+.baum-tit{
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold);text-align:center;margin-bottom:8px;
+}
+.baum-partien{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:6px}
+.partie{
+  background:var(--panel);border:1px solid rgba(242,245,239,.14);
+  border-radius:8px;overflow:hidden;
+}
+.partie.ist-mein{border-color:var(--gold);box-shadow:0 0 0 1px rgba(240,197,72,.5)}
+.pz{
+  display:flex;align-items:center;gap:5px;padding:4px 6px;
+  font-size:12px;line-height:1.1;
+}
+.pz + .pz{border-top:1px solid rgba(242,245,239,.10)}
+.pz b{flex:1;font-weight:700;letter-spacing:.02em}
+.pz .pt{
+  font-family:"Bebas Neue",sans-serif;font-size:17px;
+  min-width:14px;text-align:right;color:var(--kreide-dim);
+}
+.pz.sieger{background:rgba(76,217,123,.12)}
+.pz.sieger .pt{color:var(--gruen)}
+.pz.sieger b{color:var(--kreide)}
+.pz.mein b{color:var(--gold)}
+.pz.leer{opacity:.35}
+.pz.leer b{color:var(--kreide-dim)}
+.fl-leer{
+  width:17px;height:11px;border-radius:2px;flex:none;
+  border:1px dashed rgba(242,245,239,.35);
+}
+.sp-pokal .baum-partien{justify-content:center}
+.pokal-feld{
+  text-align:center;padding:10px 6px;
+  background:var(--panel);border:1px solid rgba(240,197,72,.35);border-radius:10px;
+}
+.pokal-feld.ist-mein{border-color:var(--gold);background:rgba(240,197,72,.14)}
+.pokal-feld .flag-svg{margin:6px auto 0}
+.pokal-mini{display:flex;justify-content:center}
+.pokal-land{font-size:12px;font-weight:700;margin-top:5px}
+.pokal-mini.blass,.pokal-land.blass{opacity:.3}
+.pokal-svg{width:auto;height:auto;flex:none;display:block}
+.wm-aktion{margin-top:8px}
+.wm-links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.link-btn{
+  background:transparent;border:none;color:var(--kreide-dim);
+  font:inherit;font-size:14px;text-decoration:underline;
+  padding:10px 14px;cursor:pointer;min-height:44px;
+}
+.link-btn:hover{color:var(--gold)}
+
+/* ---------- Pokalübergabe ---------- */
+.pokal-buehne{
+  text-align:center;padding:26px 20px 50px;position:relative;overflow:hidden;
+}
+.pokal-jubel{
+  font-family:"Bebas Neue",sans-serif;font-size:clamp(38px,8vw,76px);
+  letter-spacing:.08em;color:var(--gold);line-height:1;
+  text-shadow:0 0 26px rgba(240,197,72,.45);
+  animation:jubelpop .8s cubic-bezier(.2,1.5,.4,1) both;
+}
+@keyframes jubelpop{
+  0%{transform:scale(.2) rotate(-6deg);opacity:0}
+  70%{transform:scale(1.14) rotate(2deg);opacity:1}
+  100%{transform:scale(1) rotate(0)}
+}
+.pokal-buehne .flag{display:flex;justify-content:center;margin-top:10px}
+/* Der Pokal steht oben im eigenen Platz (padding-top), damit er weder
+   Flagge noch Teamname überdeckt. */
+.pokal-szene{
+  position:relative;width:230px;margin:6px auto 0;padding-top:104px;
+  display:flex;justify-content:center;
+}
+.pokal-fig{width:200px;height:auto;display:block}
+.pokal-hoch{
+  position:absolute;top:6px;left:50%;
+  transform:translateX(-50%);
+  animation:pokalauf 1.5s cubic-bezier(.25,1.25,.4,1) both;
+}
+@keyframes pokalauf{
+  0%{transform:translateX(-50%) translateY(210px) scale(.5);opacity:0}
+  45%{opacity:1}
+  70%{transform:translateX(-50%) translateY(-6px) scale(1.06)}
+  100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1}
+}
+.pokal-hoch .pokal-svg{filter:drop-shadow(0 0 18px rgba(240,197,72,.6))}
+
+/* ---------- Ausgeschieden: Trost-Screen ---------- */
+.trost{text-align:center;padding:34px 20px 50px}
+.trost-titel{
+  font-family:"Bebas Neue",sans-serif;font-size:clamp(28px,6vw,50px);
+  letter-spacing:.07em;color:var(--kreide);line-height:1.05;
+}
+.trost .flag{display:flex;justify-content:center;margin-top:14px;margin-bottom:8px}
+.trost .wname{color:var(--kreide)}
+.trost-txt{font-size:17px;line-height:1.6;margin-top:10px}
+.trost-weg{
+  display:inline-block;text-align:left;margin:18px auto 0;
+  background:var(--panel);border:1px solid rgba(242,245,239,.14);
+  border-radius:10px;padding:12px 16px;font-size:14.5px;line-height:1.9;
+}
+.trost-weg .zeile{display:flex;align-items:center;gap:8px}
+.trost-weg .rd{color:var(--kreide-dim);min-width:96px}
+.trost-weg .erg{font-family:"Bebas Neue",sans-serif;font-size:18px;margin-left:4px}
+.trost-weg .gewonnen .erg{color:var(--gruen)}
+.trost-weg .verloren .erg{color:var(--rot)}
+.trost-wm{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:15px;color:var(--kreide-dim);margin-top:16px;flex-wrap:wrap;
+}
+
 @media (prefers-reduced-motion: reduce){
   #keeper,#shooter,#legR,#shArmLg,#shArmRg{transition:none;animation:none}
   .confetti span,.zone.hit,.siu,#streaker.go,.pitch.shake,#net.bulge,.camflash,.dust{animation:none}
+  .pokal-jubel,.pokal-hoch{animation:none}
 }

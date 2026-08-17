@@ -41,6 +41,23 @@ const PLAYERS = [
   {p:"Sadio Mané",        num:10, skin:"#5a3a22", hair:"#161310", style:"buzz",  jersey:"#f2f5ef", shorts:"#046a38", socks:"#d52b1e"}
 ];
 
+/* Kurzzeichen für den Turnierbaum (gleiche Reihenfolge wie TEAMS) */
+const KURZ = [
+  "SUI","GER","AUT","FRA","ITA","ESP","POR","ENG",
+  "NED","BEL","CRO","DEN","NOR","USA","CAN","MEX",
+  "BRA","ARG","URU","COL","ECU","JPN","KOR","AUS",
+  "MAR","SEN"
+];
+
+/* Spielstärke 0 … 1 — nur für die Simulation der fremden Partien
+   im WM-Modus. Meine eigenen Partien schiesse ich selber. */
+const STAERKE = [
+  0.72, 0.88, 0.70, 0.95, 0.84, 0.93, 0.90, 0.91,
+  0.86, 0.80, 0.82, 0.74, 0.73, 0.72, 0.68, 0.70,
+  0.93, 0.95, 0.82, 0.80, 0.70, 0.76, 0.72, 0.64,
+  0.80, 0.76
+];
+
 /* ====================== Flaggen (SVG, 30x20) ====================== */
 const STAR = "15,5 16.18,8.38 19.76,8.45 16.9,10.62 17.94,14.05 15,12 12.06,14.05 13.1,10.62 10.24,8.45 13.82,8.38";
 const R = (x,y,w,h,c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`;

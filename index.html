@@ -19,6 +19,16 @@
       <div class="mode-row">
         <button class="mode-btn sel" id="m2p" type="button">2 Spieler am gleichen Gerät</button>
         <button class="mode-btn" id="m1p" type="button">1 Spieler gegen Computer</button>
+        <button class="mode-btn" id="mwm" type="button">Weltmeisterschaft 🏆</button>
+      </div>
+
+      <!-- Frage beim Start: gespeichertes Turnier weiterspielen? -->
+      <div class="wm-frage" id="wmFrage" style="display:none">
+        <div class="wm-frage-txt" id="wmFrageTxt"></div>
+        <div class="wm-frage-btn">
+          <button class="start-btn schmal" id="wmWeiterBtn" type="button">Turnier weiterspielen</button>
+          <button class="start-btn schmal hell" id="wmNeuStartBtn" type="button">Neues Turnier</button>
+        </div>
       </div>
 
       <div class="label" id="pickLbl">Länder wählen — zuerst Team 1, dann Team 2</div>
@@ -37,6 +47,7 @@
 
   <!-- ============ SPIEL ============ -->
   <section id="scr-game" class="screen">
+    <div class="wm-band" id="wmBand" style="display:none"></div>
     <div class="board">
       <div class="team">
         <div class="name" id="nameA"></div>
@@ -225,14 +236,60 @@
       <button class="again-btn show" id="againBtn" type="button">Neues Spiel</button>
     </div>
   </section>
+
+  <!-- ============ TURNIERBAUM ============ -->
+  <section id="scr-wm" class="screen">
+    <div class="wm-kopf">
+      <div class="wm-titel" id="wmTitel">Weltmeisterschaft 2026</div>
+      <div class="wm-unter" id="wmUnter"></div>
+    </div>
+    <div class="baum-scroll"><div class="baum" id="baum"></div></div>
+    <div class="wm-aktion">
+      <button class="start-btn" id="wmSpielBtn" type="button">ANSTOSS</button>
+      <div class="wm-links">
+        <button class="link-btn" id="wmNeuBtn" type="button">Neues Turnier</button>
+        <button class="link-btn" id="wmMenuBtn" type="button">Hauptmenü</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ POKALÜBERGABE ============ -->
+  <section id="scr-pokal" class="screen">
+    <div class="pokal-buehne" id="pokalBuehne">
+      <div class="pokal-jubel">WELTMEISTER!</div>
+      <div class="flag" id="pokalFlag"></div>
+      <div class="wname" id="pokalName"></div>
+      <div class="pokal-szene" id="pokalSzene"></div>
+      <div class="winplayer" id="pokalPlayer"></div>
+      <div class="wscore" id="pokalWeg"></div>
+      <button class="again-btn show" id="pokalNeuBtn" type="button">Neues Turnier</button>
+      <button class="link-btn" id="pokalMenuBtn" type="button">Hauptmenü</button>
+    </div>
+  </section>
+
+  <!-- ============ AUSGESCHIEDEN ============ -->
+  <section id="scr-aus" class="screen">
+    <div class="trost">
+      <div class="trost-titel" id="ausTitel"></div>
+      <div class="flag" id="ausFlag"></div>
+      <div class="wname" id="ausName"></div>
+      <div class="trost-txt" id="ausTxt"></div>
+      <div class="trost-weg" id="ausWeg"></div>
+      <div class="trost-wm" id="ausWM"></div>
+      <button class="again-btn show" id="ausBaumBtn" type="button">Turnierbaum anschauen</button>
+      <button class="link-btn" id="ausNeuBtn" type="button">Neues Turnier</button>
+      <button class="link-btn" id="ausMenuBtn" type="button">Hauptmenü</button>
+    </div>
+  </section>
 </div>
 
-<!-- Ladereihenfolge ist relevant: core → daten → ton → figuren → effekte → spiel -->
+<!-- Ladereihenfolge ist relevant: core → daten → ton → figuren → effekte → turnier → spiel -->
 <script src="js/core.js"></script>
 <script src="js/teams.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/figuren.js"></script>
 <script src="js/effekte.js"></script>
+<script src="js/turnier.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

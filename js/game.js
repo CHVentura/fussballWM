@@ -6,6 +6,7 @@
    ==================================================================== */
 
 /* ====================== Zustand ====================== */
+/* mode: "2p" = zwei Spieler, "1p" = gegen Computer, "wm" = Turnier */
 let mode = "2p";
 let selIdxA = 0, selIdxB = 1;
 let teamA, teamB;
@@ -16,8 +17,14 @@ let shootIsA = true;
 let sudden = false;
 let lastDive = {dx:0, rot:0};
 
+/* Spiele ich gegen den Computer? (Einzelspieler und Turnier) */
+function gegenComputer(){ return mode==="1p" || mode==="wm"; }
+
 /* ====================== DOM ====================== */
-const scr = {setup:$("scr-setup"), game:$("scr-game"), win:$("scr-win")};
+const scr = {
+  setup:$("scr-setup"), game:$("scr-game"), win:$("scr-win"),
+  wm:$("scr-wm"), pokal:$("scr-pokal"), aus:$("scr-aus")
+};
 
 /* Setup: ein Flaggen-Raster, alle Länder auf einen Blick */
 const gridEl=$("grid"), gridCards=[];
@@ -26,7 +33,9 @@ TEAMS.forEach((n,i)=>{
   card.className="flag-card";
   card.innerHTML=flagHTML(i,14)+`<span>${n}<small>${PLAYERS[i].p}</small></span><span class="badge"></span>`;
   card.onclick=()=>{
-    if(i===selIdxA) selIdxA=null;
+    if(mode==="wm"){
+      selIdxA=i;                 // im Turnier wähle ich nur mein eigenes Team
+    } else if(i===selIdxA) selIdxA=null;
     else if(i===selIdxB) selIdxB=null;
     else if(selIdxA==null) selIdxA=i;
     else if(selIdxB==null) selIdxB=i;
@@ -37,10 +46,12 @@ TEAMS.forEach((n,i)=>{
 });
 function refreshGrid(){
   gridCards.forEach((card,i)=>{
-    card.classList.toggle("selA", i===selIdxA);
-    card.classList.toggle("selB", i===selIdxB);
+    const istA = i===selIdxA;
+    const istB = mode!=="wm" && i===selIdxB;
+    card.classList.toggle("selA", istA);
+    card.classList.toggle("selB", istB);
     const b=card.querySelector(".badge");
-    const txt = i===selIdxA ? (mode==="1p"?"DU":"1") : i===selIdxB ? (mode==="1p"?"PC":"2") : "";
+    const txt = istA ? (mode==="2p"?"1":"DU") : istB ? (mode==="1p"?"PC":"2") : "";
     b.textContent=txt;
     b.style.display = txt ? "flex" : "none";
   });
@@ -49,17 +60,29 @@ refreshGrid();
 
 $("m2p").onclick=()=>setMode("2p");
 $("m1p").onclick=()=>setMode("1p");
+$("mwm").onclick=()=>setMode("wm");
 function setMode(m){
   mode=m;
   $("m2p").classList.toggle("sel", m==="2p");
   $("m1p").classList.toggle("sel", m==="1p");
-  $("pickLbl").textContent = m==="1p"
-    ? "Länder wählen — zuerst dein Team, dann der Computer"
-    : "Länder wählen — zuerst Team 1, dann Team 2";
+  $("mwm").classList.toggle("sel", m==="wm");
+  $("pickLbl").textContent =
+    m==="wm" ? "Dein Team für die WM wählen — der Rest wird ausgelost" :
+    m==="1p" ? "Länder wählen — zuerst dein Team, dann der Computer"
+             : "Länder wählen — zuerst Team 1, dann Team 2";
+  $("startBtn").textContent = m==="wm" ? "TURNIER STARTEN" : "ANSTOSS";
+  wmFrageAktualisieren();
   refreshGrid();
 }
 
 $("startBtn").onclick=()=>{
+  if(mode==="wm"){
+    if(selIdxA==null){ alert("Bitte dein Team wählen."); return; }
+    initAudio();
+    wmNeu(selIdxA);
+    wmBaumZeigen("Die Auslosung ist gemacht — 16 Teams, du bist dabei!");
+    return;
+  }
   if(selIdxA==null || selIdxB==null){
     alert("Bitte zwei Länder wählen.");
     return;
@@ -69,7 +92,12 @@ $("startBtn").onclick=()=>{
   initAudio();
   startGame();
 };
-$("againBtn").onclick=()=>show("setup");
+
+/* Knopf auf dem Sieger-Screen: im Turnier geht es weiter, sonst neues Spiel */
+$("againBtn").onclick=()=>{
+  if(mode==="wm" && turnier && turnier.status==="laufend"){ wmNachPartie(); }
+  else show("setup");
+};
 
 function show(name){
   Object.values(scr).forEach(s=>s.classList.remove("active"));
@@ -108,6 +136,7 @@ function startGame(){
   kicksA=[]; kicksB=[]; shootIsA=true; sudden=false;
   $("nameA").innerHTML=flagHTML(teamA.idx,13)+`<span>${teamA.name}</span>`;
   $("nameB").innerHTML=flagHTML(teamB.idx,13)+`<span>${teamB.name}</span>`;
+  renderWmBand();
   show("game");
   renderBoard();
   nextKick();
@@ -146,15 +175,18 @@ function nextKick(){
   phase="keeper";
   renderBoard();
 
-  const keeperIsComputer = (mode==="1p" && shootIsA);
-  const shooterIsComputer = (mode==="1p" && !shootIsA);
+  const keeperIsComputer = (gegenComputer() && shootIsA);
+  const shooterIsComputer = (gegenComputer() && !shootIsA);
 
   if(keeperIsComputer){
-    keeperZones=pick3();
+    keeperZones = (mode==="wm") ? wmKeeperZonen() : pick3();
     phase="shooter";
     whistle();
+    const wieViele = keeperZones.length;
     setStatus(curShooter().idx, `${shooterPlayer().p} — Schütze`,
-      "Der Computer-Torwart steht. Wähle deine Zone (1–9).", false);
+      mode==="wm"
+        ? `Der Torwart deckt ${wieViele} Zonen ab. Wähle deine Zone (1–9).`
+        : "Der Computer-Torwart steht. Wähle deine Zone (1–9).", false);
   } else {
     setStatus(curKeeperTeam().idx, `${curKeeperTeam().name} — Torwart`,
       shooterIsComputer
@@ -202,10 +234,11 @@ function handleZone(z){
     if(keeperZones.length===3){
       phase="shooter";
       whistle();
-      const shooterIsComputer=(mode==="1p" && !shootIsA);
+      const shooterIsComputer=(gegenComputer() && !shootIsA);
       if(shooterIsComputer){
         setStatus(curShooter().idx, `${shooterPlayer().p} — Schütze`,"Der Computer läuft an …",false);
-        setTimeout(()=>resolveShot(zufall(9)), 600);
+        const ziel = (mode==="wm") ? wmSchussZone() : zufall(9);
+        setTimeout(()=>resolveShot(ziel), 600);
       } else {
         setStatus(curShooter().idx, `${shooterPlayer().p} — Schütze`,"Wähle deine Zone (1–9).",false);
       }
@@ -223,6 +256,12 @@ function resolveShot(z){
 
   const covered = keeperZones.includes(z);
   const goal = !covered;
+
+  /* Im Turnier merkt sich der Computer meine Gewohnheiten */
+  if(mode==="wm" && turnier){
+    if(shootIsA) turnier.schuss[z]++;
+    else keeperZones.forEach(k=>turnier.deck[k]++);
+  }
 
   const ball=$("ball");
   const spot=s2p(SPOT);
@@ -369,6 +408,18 @@ function checkDecided(){
 
 function showWinner(side){
   phase="over";
+
+  /* Im Turnier: Resultat eintragen, danach Turnierbaum oder Trost-Screen */
+  if(mode==="wm" && turnier && turnier.status==="laufend"){
+    wmMeinResultatEintragen(score(kicksA), score(kicksB));
+    if(side!=="A"){ wmAusgeschieden(); return; }
+    $("againBtn").textContent = turnier.runde >= WM_RUNDEN.length-1
+      ? "Pokalübergabe ansehen 🏆"
+      : "Weiter im Turnier →";
+  } else {
+    $("againBtn").textContent="Neues Spiel";
+  }
+
   const t = side==="A"?teamA:teamB;
   const pl=PLAYERS[t.idx];
   $("winFlag").innerHTML=flagHTML(t.idx,56);
@@ -414,3 +465,183 @@ function renderTicks(el, arr, active){
   }
   el.innerHTML=html;
 }
+
+/* ====================================================================
+   Weltmeisterschaft — Ablauf über die Bildschirme
+   ==================================================================== */
+
+/* Band über dem Scoreboard: welche Runde läuft gerade */
+function renderWmBand(){
+  const band=$("wmBand");
+  if(mode!=="wm" || !turnier){ band.style.display="none"; return; }
+  const cfg=WM_RUNDEN[turnier.runde];
+  band.style.display="flex";
+  band.innerHTML=`<span class="runde">${cfg.name}</span><span class="info">${cfg.tw}</span>`;
+}
+
+/* Frage im Setup: gespeichertes Turnier weiterspielen? */
+function wmFrageAktualisieren(){
+  const box=$("wmFrage");
+  const t=(mode==="wm") ? wmLaden() : null;
+  if(!t){ box.style.display="none"; return; }
+  let stand;
+  if(t.status==="titel") stand="Weltmeister — Pokalübergabe";
+  else if(t.status==="aus") stand="beendet im "+wmRundenName(t.ausRunde);
+  else stand=wmRundenName(t.runde);
+  $("wmFrageTxt").innerHTML =
+    `Du hast noch ein Turnier offen: ${flagHTML(t.meinIdx,15)}<b>${TEAMS[t.meinIdx]}</b> — <b>${stand}</b>.`;
+  box.style.display="block";
+}
+
+$("wmWeiterBtn").onclick=()=>{
+  const t=wmLaden();
+  if(!t){ wmFrageAktualisieren(); return; }
+  turnier=t;
+  mode="wm";
+  selIdxA=t.meinIdx;
+  initAudio();
+  if(turnier.status==="titel"){ pokalZeigen(); return; }
+  if(turnier.status==="aus"){ ausZeigen(); return; }
+  wmBaumZeigen("Willkommen zurück — es geht weiter!");
+};
+$("wmNeuStartBtn").onclick=()=>{
+  wmLoeschen();
+  turnier=null;
+  $("wmFrage").style.display="none";
+  $("pickLbl").textContent="Dein Team für die WM wählen — der Rest wird ausgelost";
+};
+
+/* ---------------- Turnierbaum-Ansicht ---------------- */
+function wmBaumZeigen(hinweis){
+  $("baum").innerHTML=wmBaumHTML();
+  const btn=$("wmSpielBtn");
+
+  if(turnier.status==="laufend"){
+    const g=wmGegner();
+    $("wmTitel").textContent=wmRundenName(turnier.runde);
+    $("wmUnter").innerHTML=(hinweis?hinweis+"<br>":"")+
+      `Deine Partie: <b>${TEAMS[turnier.meinIdx]}</b> gegen <b>${TEAMS[g]}</b>`;
+    btn.textContent=`ANSTOSS: ${KURZ[turnier.meinIdx]} — ${KURZ[g]}`;
+    btn.style.display="block";
+    btn.onclick=()=>wmPartieStarten();
+  } else if(turnier.status==="titel"){
+    $("wmTitel").textContent="Weltmeister!";
+    $("wmUnter").innerHTML=`<b>${TEAMS[turnier.meinIdx]}</b> hat die WM gewonnen.`;
+    btn.textContent="Pokalübergabe ansehen 🏆";
+    btn.style.display="block";
+    btn.onclick=()=>pokalZeigen();
+  } else {
+    $("wmTitel").textContent="Turnier beendet";
+    $("wmUnter").innerHTML=`Du bist im <b>${wmRundenName(turnier.ausRunde)}</b> ausgeschieden.`;
+    btn.style.display="none";
+  }
+  show("wm");
+}
+
+$("wmNeuBtn").onclick=()=>{
+  const meins = turnier ? turnier.meinIdx : selIdxA;
+  wmNeu(meins);
+  wmBaumZeigen("Neu ausgelost — viel Glück!");
+};
+$("wmMenuBtn").onclick=()=>{ setMode("wm"); show("setup"); };
+
+/* ---------------- Meine Partie starten ---------------- */
+function wmPartieStarten(){
+  const g=wmGegner();
+  teamA={name:TEAMS[turnier.meinIdx], idx:turnier.meinIdx};
+  teamB={name:TEAMS[g], idx:g};
+  initAudio();
+  startGame();
+}
+
+/* ---------------- Nach meiner gewonnenen Partie ---------------- */
+function wmNachPartie(){
+  wmAndereSimulieren();          // die übrigen Partien der Runde
+  wmSpeichern();
+  if(turnier.runde < WM_RUNDEN.length-1){
+    wmNaechsteRunde();
+    const g=wmGegner();
+    wmBaumZeigen(`Weiter! Im ${wmRundenName(turnier.runde)} wartet ${TEAMS[g]}.`);
+  } else {
+    turnier.status="titel";
+    wmSpeichern();
+    pokalZeigen();
+  }
+}
+
+/* ---------------- Ausgeschieden ---------------- */
+function wmAusgeschieden(){
+  turnier.status="aus";
+  turnier.ausRunde=turnier.runde;
+  wmAndereSimulieren();
+  wmRestSimulieren();            // damit man sieht, wer Weltmeister wird
+  wmSpeichern();
+  ausZeigen();
+}
+
+/* Meine Partien als Liste */
+function wegHTML(){
+  return wmMeinWeg().map(w=>
+    `<div class="zeile ${w.gewonnen?"gewonnen":"verloren"}">`+
+    `<span class="rd">${wmRundenName(w.runde)}</span>`+
+    `${flagHTML(w.gegner,12)}<span>${TEAMS[w.gegner]}</span>`+
+    `<span class="erg">${w.meine}:${w.seine}</span></div>`
+  ).join("");
+}
+
+function ausZeigen(){
+  const r=turnier.ausRunde;
+  const trostText=[
+    "Du warst unter den besten 16 der Welt — nicht schlecht!",
+    "Viertelfinal! Unter den besten 8 von der ganzen Welt.",
+    "Halbfinal! Nur drei Teams waren besser als du.",
+    "Vizeweltmeister! Ganz knapp am Titel vorbei — riesig!"
+  ][r] || "Gut gespielt!";
+
+  $("ausTitel").textContent = r===3 ? "So knapp!" : "Schade — aber gut gespielt!";
+  $("ausFlag").innerHTML=flagHTML(turnier.meinIdx,56);
+  $("ausName").textContent=TEAMS[turnier.meinIdx];
+  $("ausTxt").textContent=trostText;
+  $("ausWeg").innerHTML=wegHTML();
+
+  const wm=wmWeltmeister();
+  $("ausWM").innerHTML = wm!=null
+    ? `Weltmeister 2026: ${flagHTML(wm,18)}<b>${TEAMS[wm]}</b>`
+    : "";
+  show("aus");
+  groan();
+}
+$("ausBaumBtn").onclick=()=>wmBaumZeigen();
+$("ausNeuBtn").onclick=()=>{ wmNeu(turnier.meinIdx); wmBaumZeigen("Neu ausgelost — noch einmal!"); };
+$("ausMenuBtn").onclick=()=>{ setMode("wm"); show("setup"); };
+
+/* ---------------- Pokalübergabe ---------------- */
+function pokalZeigen(){
+  const idx=turnier.meinIdx;
+  $("pokalFlag").innerHTML=flagHTML(idx,56);
+  $("pokalName").textContent=TEAMS[idx];
+  $("pokalPlayer").textContent=PLAYERS[idx].p+" hebt den Pokal";
+  $("pokalWeg").innerHTML=`<div class="trost-weg">${wegHTML()}</div>`;
+  drawPokalSzene(idx);
+  show("pokal");
+
+  /* Konfettiregen in Wellen, dazu Fanfare und Jubel */
+  const buehne=$("pokalBuehne");
+  spawnConfetti(buehne, 110);
+  fanfare();
+  let welle=0;
+  const regen=setInterval(()=>{
+    welle++;
+    if(welle>4 || !scr.pokal.classList.contains("active")){ clearInterval(regen); return; }
+    spawnConfetti(buehne, 70);
+    if(welle===2) cheer();
+  }, 1400);
+  setTimeout(()=>{ if(scr.pokal.classList.contains("active")) siuSound(); }, 1700);
+}
+$("pokalNeuBtn").onclick=()=>{ wmNeu(turnier.meinIdx); wmBaumZeigen("Titelverteidigung — neu ausgelost!"); };
+$("pokalMenuBtn").onclick=()=>{ setMode("wm"); show("setup"); };
+
+/* ---------------- Beim Laden: offenes Turnier? ---------------- */
+(function beimStart(){
+  if(wmLaden()) setMode("wm");
+})();

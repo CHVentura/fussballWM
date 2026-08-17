@@ -167,6 +167,34 @@ function siuSound(){
   cheer();
 }
 
+/* Fanfare für die Pokalübergabe: kurzer Blechbläser-Dreiklang */
+function fanfare(){
+  if(!AC||AC.state!=="running") return;
+  const t0=AC.currentTime;
+  const noten=[
+    {f:392.00, t:0.00, d:0.26},   // G
+    {f:523.25, t:0.22, d:0.26},   // C
+    {f:659.25, t:0.44, d:0.30},   // E
+    {f:783.99, t:0.70, d:0.85}    // G hoch
+  ];
+  noten.forEach(n=>{
+    const t=t0+n.t;
+    [1, 2, 3].forEach((ober,k)=>{
+      const o=AC.createOscillator(), g=AC.createGain();
+      o.type = k===0 ? "triangle" : "sine";
+      o.frequency.value=n.f*ober;
+      const amp=[0.13, 0.05, 0.025][k];
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(amp,t+0.03);
+      g.gain.setValueAtTime(amp,t+n.d*0.55);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+n.d);
+      o.connect(g); g.connect(master);
+      o.start(t); o.stop(t+n.d+0.05);
+    });
+  });
+  cheer();
+}
+
 /* Sound-Schalter im Scoreboard */
 $("sndBtn").onclick=()=>{
   soundOn=!soundOn;
