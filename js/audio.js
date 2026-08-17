@@ -7,6 +7,8 @@
 
 let AC = null, master, ambGain, musicGain, soundOn = true;
 let grooveTimer = null, grooveBeat = 0, grooveNext = 0;
+/* Tempo der Trommeln — steigt bei einer Trefferserie */
+let grooveBPM = 104;
 
 function initAudio(){
   if(AC){ if(AC.state==="suspended" && soundOn) AC.resume(); return; }
@@ -35,9 +37,13 @@ function initAudio(){
   grooveNext=AC.currentTime+0.2; grooveBeat=0;
   grooveTimer=setInterval(scheduleGroove,150);
 }
+/* Bei einer Serie treiben die Trommeln an: 104 normal, bis 136 im Rausch */
+function grooveTempo(bpm){
+  grooveBPM = Math.max(96, Math.min(140, bpm));
+}
 function scheduleGroove(){
   if(!AC || AC.state!=="running") return;
-  const beat=60/104;
+  const beat=60/grooveBPM;
   while(grooveNext < AC.currentTime+0.4){
     const step=grooveBeat%4;
     if(step===0||step===1) drum(grooveNext);
@@ -193,6 +199,39 @@ function fanfare(){
     });
   });
   cheer();
+}
+
+/* Kleines Glöckchen, wenn ein Abzeichen freigeschaltet wird */
+function jingel(){
+  if(!AC||AC.state!=="running") return;
+  const t0=AC.currentTime;
+  [523.25, 659.25, 783.99, 1046.50].forEach((f,i)=>{
+    const t=t0+i*0.09;
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type="triangle"; o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.10,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.34);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t+0.38);
+  });
+}
+
+/* Serie: bei jedem weiteren Treffer ein Ton höher — bis es brennt */
+function serieTon(stufe){
+  if(!AC||AC.state!=="running") return;
+  const t=AC.currentTime;
+  const grund=[392.00, 440.00, 493.88, 587.33, 659.25, 783.99];
+  const f=grund[Math.min(stufe, grund.length-1)];
+  [1, 1.5].forEach((mult,k)=>{
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type = k===0 ? "square" : "sine";
+    o.frequency.value=f*mult;
+    const amp = k===0 ? 0.07 : 0.035;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(amp,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.42);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t+0.46);
+  });
 }
 
 /* Sound-Schalter im Scoreboard */

@@ -21,14 +21,31 @@ let lastDive = {dx:0, rot:0};
 let schuetzeNr = {A:0, B:0};
 /* Wer für ein Team zuletzt getroffen hat — für den Sieger-Screen */
 let letzterTreffer = {A:null, B:null};
+/* Trefferserie pro Team und Paraden in dieser Partie (für Abzeichen) */
+let serie = {A:0, B:0};
+let paradenPartie = 0;
 
-/* Spiele ich gegen den Computer? (Einzelspieler und Turnier) */
-function gegenComputer(){ return mode==="1p" || mode==="wm"; }
+/* Das Profil spielt immer als Team A — im Zweispieler-Modus ist das
+   Spieler 1. Statistik und Abzeichen zählen für diese Seite. */
+function meineSeite(){ return "A"; }
+
+/* Im Turnier zu zweit: läuft gerade ein Duell Mensch gegen Mensch? */
+let wm2GegenMensch = false;
+/* Welcher der zwei Spieler ist gerade dran (0 oder 1) */
+let wm2Akt = 0;
+
+/* Spiele ich gegen den Computer? */
+function gegenComputer(){
+  if(mode==="wm2") return !wm2GegenMensch;
+  return mode==="1p" || mode==="wm";
+}
+/* Läuft gerade eine Turnierpartie (egal welches Turnier)? */
+function imTurnier(){ return mode==="wm" || mode==="wm2"; }
 
 /* ====================== DOM ====================== */
 const scr = {
-  setup:$("scr-setup"), game:$("scr-game"), win:$("scr-win"),
-  wm:$("scr-wm"), pokal:$("scr-pokal"), aus:$("scr-aus")
+  profil:$("scr-profil"), setup:$("scr-setup"), game:$("scr-game"), win:$("scr-win"),
+  wm:$("scr-wm"), pokal:$("scr-pokal"), aus:$("scr-aus"), vitrine:$("scr-vitrine")
 };
 
 /* Setup: ein Flaggen-Raster, alle Länder auf einen Blick */
@@ -66,21 +83,56 @@ refreshGrid();
 $("m2p").onclick=()=>setMode("2p");
 $("m1p").onclick=()=>setMode("1p");
 $("mwm").onclick=()=>setMode("wm");
+$("mwm2").onclick=()=>setMode("wm2");
 function setMode(m){
   mode=m;
   $("m2p").classList.toggle("sel", m==="2p");
   $("m1p").classList.toggle("sel", m==="1p");
   $("mwm").classList.toggle("sel", m==="wm");
+  $("mwm2").classList.toggle("sel", m==="wm2");
   $("pickLbl").textContent =
+    m==="wm2" ? "Zwei Teams wählen — zuerst Spieler 1, dann Spieler 2" :
     m==="wm" ? "Dein Team für die WM wählen — der Rest wird ausgelost" :
     m==="1p" ? "Länder wählen — zuerst dein Team, dann der Computer"
              : "Länder wählen — zuerst Team 1, dann Team 2";
-  $("startBtn").textContent = m==="wm" ? "TURNIER STARTEN" : "ANSTOSS";
+  $("startBtn").textContent = (m==="wm"||m==="wm2") ? "TURNIER STARTEN" : "ANSTOSS";
+  sp2BoxZeigen();
   wmFrageAktualisieren();
   refreshGrid();
 }
 
+/* ---- Spieler 2 im Turnier zu zweit ---- */
+let sp2Profil = null;
+function sp2BoxZeigen(){
+  const box=$("sp2Box");
+  if(mode!=="wm2"){ box.style.display="none"; return; }
+  box.style.display="block";
+  const andere=profile.liste.filter(p=>p.name!==profile.aktiv);
+  if(!andere.length){
+    $("sp2Liste").innerHTML=`<div class="sp2-hinweis">Für ein Turnier zu zweit
+      braucht es ein zweites Profil. Tipp auf <b>Profil wechseln</b> und leg
+      eines an — danach könnt ihr gemeinsam spielen.</div>`;
+    sp2Profil=null;
+    return;
+  }
+  if(!andere.some(p=>p.name===sp2Profil)) sp2Profil=andere[0].name;
+  $("sp2Liste").innerHTML=andere.map(p=>
+    `<button class="sp2-btn${p.name===sp2Profil?" sel":""}" type="button" data-name="${p.name}">${p.name}</button>`
+  ).join("");
+  [...$("sp2Liste").querySelectorAll(".sp2-btn")].forEach(b=>{
+    b.onclick=()=>{ sp2Profil=b.getAttribute("data-name"); sp2BoxZeigen(); };
+  });
+}
+
 $("startBtn").onclick=()=>{
+  if(mode==="wm2"){
+    if(!sp2Profil){ alert("Bitte zuerst ein zweites Profil anlegen."); return; }
+    if(selIdxA==null || selIdxB==null){ alert("Bitte zwei Länder wählen."); return; }
+    initAudio();
+    wm2Neu(profile.aktiv, selIdxA, sp2Profil, selIdxB);
+    wm2BaumZeigen("Ausgelost — ihr seid beide dabei!");
+    return;
+  }
   if(mode==="wm"){
     if(selIdxA==null){ alert("Bitte dein Team wählen."); return; }
     initAudio();
@@ -100,14 +152,85 @@ $("startBtn").onclick=()=>{
 
 /* Knopf auf dem Sieger-Screen: im Turnier geht es weiter, sonst neues Spiel */
 $("againBtn").onclick=()=>{
-  if(mode==="wm" && turnier && turnier.status==="laufend"){ wmNachPartie(); }
+  if(mode==="wm"  && turnier  && turnier.status==="laufend"){ wmNachPartie(); }
+  else if(mode==="wm2" && turnier2){ wm2NachPartie(); }
   else show("setup");
 };
 
 function show(name){
   Object.values(scr).forEach(s=>s.classList.remove("active"));
   scr[name].classList.add("active");
-  document.querySelector("h1").style.display = name==="setup" ? "" : "none";
+  const titelZeigen = (name==="setup" || name==="profil");
+  document.querySelector("h1").style.display = titelZeigen ? "" : "none";
+  if(name==="setup") profilKopfZeigen();
+}
+
+/* ====================================================================
+   Profile: wer spielt, Vitrine, Anfänger oder Profi
+   ==================================================================== */
+function profilScreenZeigen(){
+  $("profListe").innerHTML = profilListeHTML();
+  [...document.querySelectorAll(".prof-karte")].forEach(k=>{
+    k.onclick=()=>{
+      profilWaehlen(k.getAttribute("data-name"));
+      initAudio();
+      nachProfilwahl();
+    };
+  });
+  $("profName").value="";
+  neuProfilModus = "anfaenger";
+  profilModusKnoepfe();
+  show("profil");
+}
+let neuProfilModus = "anfaenger";
+function profilModusKnoepfe(){
+  $("profAnf").classList.toggle("sel", neuProfilModus==="anfaenger");
+  $("profPro").classList.toggle("sel", neuProfilModus==="profi");
+}
+$("profAnf").onclick=()=>{ neuProfilModus="anfaenger"; profilModusKnoepfe(); };
+$("profPro").onclick=()=>{ neuProfilModus="profi";     profilModusKnoepfe(); };
+$("profAnlegenBtn").onclick=()=>{
+  profilAnlegen($("profName").value, neuProfilModus);
+  initAudio();
+  nachProfilwahl();
+};
+$("profName").addEventListener("keydown",e=>{
+  if(e.key==="Enter") $("profAnlegenBtn").click();
+});
+
+/* Nach der Profilwahl: offenes Turnier? Dann direkt in den WM-Modus. */
+function nachProfilwahl(){
+  turnier=null;
+  const t=wmLaden();
+  if(t) setMode("wm"); else setMode(mode);
+  show("setup");
+}
+
+function profilKopfZeigen(){
+  const p=aktivProfil();
+  if(!p) return;
+  $("profWer").innerHTML=`${p.name}<small>🏆 ${p.pokale.length} Pokale · 🏅 ${abzeichenAnzahl()} Abzeichen</small>`;
+  $("modusBtn").textContent = p.modus==="profi" ? "Modus: Profi" : "Modus: Anfänger";
+  $("challBox").innerHTML=challengeHTML();
+}
+$("modusBtn").onclick=()=>{
+  const neu=modusUmschalten();
+  profilKopfZeigen();
+  $("modusBtn").textContent = neu==="profi" ? "Modus: Profi" : "Modus: Anfänger";
+};
+$("profWechselBtn").onclick=()=>profilScreenZeigen();
+$("vitrineBtn").onclick=()=>vitrineZeigen();
+$("vitZurueckBtn").onclick=()=>show("setup");
+
+function vitrineZeigen(){
+  const p=aktivProfil();
+  if(!p) return;
+  $("vitTitel").textContent=`Vitrine von ${p.name}`;
+  $("vitUnter").textContent = p.pokale.length
+    ? `${p.pokale.length} ${p.pokale.length===1?"Pokal":"Pokale"} · ${abzeichenAnzahl()} von ${ABZEICHEN.length} Abzeichen`
+    : "Hier landet alles, was du gewinnst.";
+  $("vitrine").innerHTML=vitrineHTML();
+  show("vitrine");
 }
 
 /* ====================== Tor-SVG aufbauen ====================== */
@@ -141,6 +264,10 @@ function startGame(){
   kicksA=[]; kicksB=[]; shootIsA=true; sudden=false;
   schuetzeNr={A:0, B:0};
   letzterTreffer={A:null, B:null};
+  serie={A:0, B:0};
+  paradenPartie=0;
+  grooveTempo(104);
+  landGespielt(teamA.idx);
   $("nameA").innerHTML=flagHTML(teamA.idx,13)+`<span>${teamA.name}</span>`;
   $("nameB").innerHTML=flagHTML(teamB.idx,13)+`<span>${teamB.name}</span>`;
   buildCrowd(teamA.idx, teamB.idx);   // Ränge in den Farben der zwei Teams
@@ -176,6 +303,7 @@ function nextKick(){
   versteckeZielkreuz();
   zeitlupeAus();
   kameraZurueck();
+  kraftAbbrechen();
 
   const keeper=$("keeper"), shooter=$("shooter");
   keeper.style.transition="none"; keeper.style.transform="";
@@ -189,6 +317,9 @@ function nextKick(){
   $("shooterFlagG").innerHTML=flagInner(curShooter().idx)+flagFrame();
   applyShooterLook(curShooter().idx, shooterPlayer());
 
+  /* Der Ball brennt nur, wenn das Team am Ball eine Serie hat */
+  ball.classList.toggle("feuer", serie[shootIsA?"A":"B"]>=3);
+
   keeperZones=[];
   phase="keeper";
   renderBoard();
@@ -197,13 +328,15 @@ function nextKick(){
   const shooterIsComputer = (gegenComputer() && !shootIsA);
 
   if(keeperIsComputer){
-    keeperZones = (mode==="wm") ? wmKeeperZonen() : pick3();
+    keeperZones = (mode==="wm") ? wmKeeperZonen()
+                : (mode==="wm2") ? keeperZonenFuerRunde(turnier2.runde, wm2Spieler(wm2Akt).schuss)
+                : pick3();
     phase="shooter";
     whistle();
     const wieViele = keeperZones.length;
     const matchball = istMatchball();
     setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,
-      (matchball ? "Matchball! " : "") + (mode==="wm"
+      (matchball ? "Matchball! " : "") + (imTurnier()
         ? `Der Torwart deckt ${wieViele} Zonen ab. Wähle deine Zone (1–9).`
         : "Der Computer-Torwart steht. Wähle deine Zone (1–9)."), false);
     zeigeZielkreuz(anspannung());
@@ -239,10 +372,16 @@ function updateSecret(){
 
 /* ----- Eingabe ----- */
 document.addEventListener("keydown",e=>{
+  /* Im Profi-Modus stoppt jede Taste den Kraftbalken */
+  if(phase==="timing" && kraftLaeuft()){ kraftStop(); e.preventDefault(); return; }
   if(phase==="result" && (e.key==="Enter" || e.key===" ")){ $("nextBtn").click(); return; }
   const d=parseInt(e.key,10);
   if(!Number.isInteger(d) || !(d in KEY2ZONE)) return;
   handleZone(KEY2ZONE[d]);
+});
+/* Auf dem Tablet: Tipp irgendwo auf die Szene stoppt den Balken */
+document.querySelector(".pitch").addEventListener("pointerdown",()=>{
+  if(phase==="timing" && kraftLaeuft()) kraftStop();
 });
 
 function handleZone(z){
@@ -257,8 +396,11 @@ function handleZone(z){
       const shooterIsComputer=(gegenComputer() && !shootIsA);
       if(shooterIsComputer){
         setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,"Der Computer läuft an …",false);
-        const ziel = (mode==="wm") ? wmSchussZone() : zufall(9);
-        setTimeout(()=>resolveShot(ziel), 600);
+        const ziel = (mode==="wm") ? wmSchussZone()
+                   : (mode==="wm2") ? schussZoneFuerRunde(turnier2.runde, wm2Spieler(wm2Akt).deck)
+                   : zufall(9);
+        const tim = computerTiming();
+        setTimeout(()=>resolveShot(ziel, tim), 600);
       } else {
         setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,
           istMatchball() ? "Matchball — wähle deine Zone (1–9)!" : "Wähle deine Zone (1–9).", false);
@@ -266,8 +408,38 @@ function handleZone(z){
       }
     }
   } else if(phase==="shooter"){
-    resolveShot(z);
+    schussStarten(z);
   }
+}
+
+/* Im Anfänger-Modus geht der Schuss direkt los. Im Profi-Modus kommt
+   zuerst der Kraftbalken — der Mensch stoppt ihn selber, der Computer
+   bekommt seinen Wert ausgewürfelt (siehe computerTiming). */
+function schussStarten(z){
+  if(!timingAn()){ resolveShot(z, null); return; }
+  phase="timing";
+  versteckeZielkreuz();
+  setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,
+    "Kraftbalken stoppen — grün ist perfekt!", false);
+  kraftStarten(art=>{
+    phase="anim";
+    resolveShot(z, art);
+  });
+}
+
+/* Der Computer zielt im Profi-Modus auch nicht perfekt. Im Turnier wird
+   er von Runde zu Runde sicherer. */
+function computerTiming(){
+  if(!timingAn()) return null;
+  let danebenP=0.16, perfektP=0.26;
+  if(mode==="wm" && turnier){
+    danebenP = [0.20, 0.16, 0.12, 0.09][turnier.runde] || 0.14;
+    perfektP = [0.20, 0.26, 0.32, 0.38][turnier.runde] || 0.26;
+  }
+  const w=Math.random();
+  if(w < danebenP) return "rot";
+  if(w < danebenP + perfektP) return "gruen";
+  return "gelb";
 }
 
 /* ----- Matchball und Anspannung -----
@@ -289,12 +461,16 @@ function istMatchball(){
   return wuerdeEntscheiden(true) || wuerdeEntscheiden(false);
 }
 function anspannung(){
-  const spaeteRunde = (mode==="wm" && turnier && turnier.runde>=2);
+  const spaeteRunde = (mode==="wm"  && turnier  && turnier.runde>=2) ||
+                      (mode==="wm2" && turnier2 && turnier2.runde>=2);
   return spaeteRunde || istMatchball();
 }
 
-/* ----- Auswertung + Animation ----- */
-function resolveShot(z){
+/* ----- Auswertung + Animation -----
+   timing: null im Anfänger-Modus, sonst "rot" (daneben), "gelb"
+   (normal) oder "gruen" (perfekt — ein gedeckter Ball rutscht dem
+   Torwart dann manchmal durch). */
+function resolveShot(z, timing){
   phase="anim";
   $("secret").style.display="none";
   versteckeZielkreuz();
@@ -305,13 +481,22 @@ function resolveShot(z){
   const zeit = matchball ? 1.9 : 1;
   const schuetze = shooterPlayer();
 
+  const daneben = (timing==="rot");
   const covered = keeperZones.includes(z);
-  const goal = !covered;
+  /* Ein perfekter Schuss ist so hart, dass der Torwart ihn manchmal
+     nicht festhalten kann */
+  const durchgerutscht = covered && !daneben && timing==="gruen" && Math.random()<0.35;
+  const goal = !daneben && (!covered || durchgerutscht);
+  const ziel = daneben ? danebenZiel(z) : zoneCenterSVG(z);
 
   /* Im Turnier merkt sich der Computer meine Gewohnheiten */
   if(mode==="wm" && turnier){
     if(shootIsA) turnier.schuss[z]++;
     else keeperZones.forEach(k=>turnier.deck[k]++);
+  } else if(mode==="wm2" && turnier2 && !wm2GegenMensch){
+    const sp=wm2Spieler(wm2Akt);
+    if(shootIsA) sp.schuss[z]++;
+    else keeperZones.forEach(k=>sp.deck[k]++);
   }
 
   const ball=$("ball");
@@ -338,13 +523,27 @@ function resolveShot(z){
     diveKeeper(z, covered, zeit);
 
     setTimeout(()=>{
-      flyBall(zoneCenterSVG(z), {dur:Math.round(460*zeit), endScale:0.58, arc:65, groundEnd:255}, ()=>{
+      const flug = daneben
+        ? {dur:Math.round(520*zeit), endScale:0.42, arc:88, groundEnd:200}
+        : {dur:Math.round(460*zeit), endScale:0.58, arc:65, groundEnd:255};
+      flyBall(ziel, flug, ()=>{
         phase="result";
         zeitlupeAus();
         keeperZones.forEach(k=>zoneEls[k].classList.add("kept"));
         const banner=$("banner");
         banner.classList.remove("pop"); void banner.offsetWidth;
-        if(goal){
+        let hinweis="";
+        if(daneben){
+          /* Verrissen: der Ball geht neben oder über das Tor */
+          banner.textContent="DANEBEN!";
+          banner.className="banner vorbei pop";
+          groan();
+          $("ball").classList.remove("live");
+          $("ball").style.opacity="0";
+          shooter.style.transition="transform .6s ease-out";
+          shooter.style.transform="translate(0px,5px) rotate(-9deg)";
+          hinweis="Den hat er verrissen — vorbei!";
+        } else if(goal){
           zoneEls[z].classList.add("hit");
           banner.textContent="TOOOR!";
           banner.className="banner goal pop";
@@ -354,6 +553,9 @@ function resolveShot(z){
           shooter.style.transform="translate(0px,2px)";
           shooter.classList.add("celebrate","joy");
           spawnConfetti(document.querySelector(".pitch"));
+          if(durchgerutscht){
+            hinweis="Perfekt geschossen — der Torwart kann ihn nicht halten!";
+          }
         } else {
           zoneEls[z].classList.add("shot-stop");
           banner.textContent="GEHALTEN!";
@@ -375,6 +577,8 @@ function resolveShot(z){
         const seite = shootIsA ? "A" : "B";
         if(goal) letzterTreffer[seite]=schuetze;
         schuetzeNr[seite]++;              // nächster Schütze ist dran
+        serieBuchen(seite, goal);
+        statistikBuchen(seite, goal, daneben);
         renderBoard(true);
 
         const result = checkDecided();
@@ -383,7 +587,7 @@ function resolveShot(z){
         } else {
           shootIsA = !shootIsA;
           $("nextBtn").classList.add("show");
-          setStatus(null,"","",false);
+          setStatus(null,"",hinweis,false);
           const flitzer = Math.random()<0.14;
           if(flitzer) setTimeout(runStreaker, 550);
           scheduleAuto(flitzer ? 3900 : 2400);
@@ -391,6 +595,44 @@ function resolveShot(z){
       });
     }, 45);
   }, 540);
+}
+
+/* ----- Trefferserie -----
+   Ab drei Toren hintereinander brennt der Ball und die Trommeln
+   treiben an. Ein Fehlschuss setzt die Serie zurück. */
+function serieBuchen(seite, goal){
+  if(goal){
+    serie[seite]++;
+    if(seite===meineSeite()){
+      statBesteSerie(serie[seite]);
+      if(serie[seite]>=3) abzeichenGeben("hattrick");
+      if(serie[seite]>=5) abzeichenGeben("unaufhaltsam");
+      challengePruefen("serie", serie[seite]);
+    }
+    if(serie[seite]>=2) serieTon(serie[seite]-2);
+  } else {
+    serie[seite]=0;
+  }
+  /* Tempo aus der höchsten noch laufenden Serie — ein Fehlschuss des
+     Gegners darf meine Serie nicht ausbremsen */
+  const hoechste=Math.max(serie.A, serie.B);
+  grooveTempo(hoechste>=3 ? 104 + (hoechste-2)*10 : 104);
+  $("ball").classList.toggle("feuer", serie[seite]>=3 && goal);
+}
+
+/* ----- Statistik und Abzeichen ----- */
+function statistikBuchen(seite, goal, daneben){
+  if(seite===meineSeite()){
+    statPlus("schuesse");
+    if(goal) statPlus("tore");
+  } else if(!goal && !daneben){
+    /* Echte Parade — ein Schuss neben das Tor zählt nicht als meine Leistung */
+    statPlus("paraden");
+    paradenPartie++;
+    if(paradenPartie>=3) abzeichenGeben("katze");
+    challengePruefen("paraden", paradenPartie);
+  }
+  profileSpeichern();
 }
 
 /* Torwart-Hechtsprung mit Landung und Staub.
@@ -469,6 +711,42 @@ function checkDecided(){
 
 function showWinner(side){
   phase="over";
+  grooveTempo(104);
+
+  /* Abzeichen und Tages-Aufgabe für die gewonnene Partie */
+  if(side===meineSeite()){
+    if(sudden) abzeichenGeben("nervenstark");
+    const ohneFehler = kicksA.length>=3 && score(kicksA)===kicksA.length;
+    if(ohneFehler){
+      abzeichenGeben("makellos");
+      challengePruefen("makellos");
+    }
+    challengePruefen("schlage", teamB.idx);
+  }
+  profileSpeichern();
+
+  /* Turnier zu zweit: Resultat eintragen, dann geht es im Baum weiter */
+  if(mode==="wm2" && turnier2 && turnier2.status==="laufend"){
+    wm2ResultatBuchen(side);
+    $("againBtn").textContent="Weiter im Turnier →";
+    const t = side==="A"?teamA:teamB;
+    const pl2 = letzterTreffer[side] || stern(t.idx);
+    $("winFlag").innerHTML=flagHTML(t.idx,56);
+    $("winName").textContent=`${t.name} gewinnt!`;
+    $("winScore").textContent=`${teamA.name} ${score(kicksA)} : ${score(kicksB)} ${teamB.name}`+(sudden?" — nach Sudden Death":"");
+    $("winPlayer").textContent=pl2.p;
+    drawWinFig(t.idx, pl2);
+    const siu2=$("siuText");
+    siu2.style.display="none";
+    show("win");
+    setTimeout(()=>{
+      siu2.style.display="block";
+      siu2.style.animation="none"; void siu2.offsetWidth; siu2.style.animation="";
+      siuSound();
+    }, 350);
+    spawnConfetti($("winnerBox"));
+    return;
+  }
 
   /* Im Turnier: Resultat eintragen, danach Turnierbaum oder Trost-Screen */
   if(mode==="wm" && turnier && turnier.status==="laufend"){
@@ -512,6 +790,19 @@ function renderBoard(pop){
   }
   renderTicks($("ticksA"), kicksA, shootIsA && phase!=="over");
   renderTicks($("ticksB"), kicksB, !shootIsA && phase!=="over");
+  renderSerie();
+}
+
+/* Serienanzeige: erst ab zwei Treffern, ab drei mit Feuer */
+function renderSerie(){
+  const el=$("serieAnz");
+  const s=Math.max(serie.A, serie.B);
+  if(s<2 || phase==="over"){ el.style.display="none"; return; }
+  const wer = serie.A>=serie.B ? teamA : teamB;
+  const heiss = s>=3;
+  el.style.display="flex";
+  el.classList.toggle("heiss", heiss);
+  el.innerHTML=`${heiss?"🔥":"⚡"} ${s}er-Serie <small>${wer.name}</small>`;
 }
 function renderTicks(el, arr, active){
   const total=Math.max(5, arr.length + (active && arr.length>=5 ? 1 : 0));
@@ -534,6 +825,15 @@ function renderTicks(el, arr, active){
 /* Band über dem Scoreboard: welche Runde läuft gerade */
 function renderWmBand(){
   const band=$("wmBand");
+  if(mode==="wm2" && turnier2){
+    const cfg=WM_RUNDEN[turnier2.runde];
+    band.style.display="flex";
+    band.innerHTML=`<span class="runde">${cfg.name}</span><span class="info">`+
+      (wm2GegenMensch
+        ? `Duell: ${wm2Name(0)} gegen ${wm2Name(1)}!`
+        : `${wm2Name(wm2Akt)} spielt · ${cfg.tw}`)+`</span>`;
+    return;
+  }
   if(mode!=="wm" || !turnier){ band.style.display="none"; return; }
   const cfg=WM_RUNDEN[turnier.runde];
   band.style.display="flex";
@@ -543,6 +843,18 @@ function renderWmBand(){
 /* Frage im Setup: gespeichertes Turnier weiterspielen? */
 function wmFrageAktualisieren(){
   const box=$("wmFrage");
+
+  if(mode==="wm2"){
+    const t2=wm2Laden();
+    if(!t2){ box.style.display="none"; return; }
+    const stand = t2.status==="fertig" ? "beendet" : WM_RUNDEN[t2.runde].name;
+    $("wmFrageTxt").innerHTML =
+      `Turnier zu zweit offen: ${flagHTML(t2.spieler[0].idx,15)}<b>${t2.spieler[0].profil}</b>`+
+      ` gegen ${flagHTML(t2.spieler[1].idx,15)}<b>${t2.spieler[1].profil}</b> — <b>${stand}</b>.`;
+    box.style.display="block";
+    return;
+  }
+
   const t=(mode==="wm") ? wmLaden() : null;
   if(!t){ box.style.display="none"; return; }
   let stand;
@@ -555,6 +867,14 @@ function wmFrageAktualisieren(){
 }
 
 $("wmWeiterBtn").onclick=()=>{
+  if(mode==="wm2"){
+    const t2=wm2Laden();
+    if(!t2){ wmFrageAktualisieren(); return; }
+    turnier2=t2;
+    initAudio();
+    wm2BaumZeigen("Willkommen zurück — es geht weiter!");
+    return;
+  }
   const t=wmLaden();
   if(!t){ wmFrageAktualisieren(); return; }
   turnier=t;
@@ -566,6 +886,13 @@ $("wmWeiterBtn").onclick=()=>{
   wmBaumZeigen("Willkommen zurück — es geht weiter!");
 };
 $("wmNeuStartBtn").onclick=()=>{
+  if(mode==="wm2"){
+    wm2Loeschen();
+    turnier2=null;
+    $("wmFrage").style.display="none";
+    $("pickLbl").textContent="Zwei Teams wählen — zuerst Spieler 1, dann Spieler 2";
+    return;
+  }
   wmLoeschen();
   turnier=null;
   $("wmFrage").style.display="none";
@@ -600,11 +927,21 @@ function wmBaumZeigen(hinweis){
 }
 
 $("wmNeuBtn").onclick=()=>{
+  if(mode==="wm2" && turnier2){
+    const s=turnier2.spieler;
+    wm2Neu(s[0].profil, s[0].idx, s[1].profil, s[1].idx);
+    wm2BaumZeigen("Neu ausgelost — viel Glück, ihr zwei!");
+    return;
+  }
   const meins = turnier ? turnier.meinIdx : selIdxA;
   wmNeu(meins);
   wmBaumZeigen("Neu ausgelost — viel Glück!");
 };
-$("wmMenuBtn").onclick=()=>{ setMode("wm"); show("setup"); };
+$("wmMenuBtn").onclick=()=>{
+  if(mode==="wm2" && turnier2 && turnier2.chef) profilWaehlen(turnier2.chef);
+  setMode(mode);
+  show("setup");
+};
 
 /* ---------------- Meine Partie starten ---------------- */
 function wmPartieStarten(){
@@ -625,6 +962,14 @@ function wmNachPartie(){
     wmBaumZeigen(`Weiter! Im ${wmRundenName(turnier.runde)} wartet ${TEAMS[g]}.`);
   } else {
     turnier.status="titel";
+    /* Pokal in die Vitrine — einmal pro Turnier */
+    if(!turnier.pokalGezaehlt){
+      turnier.pokalGezaehlt=true;
+      const weg=wmMeinWeg();
+      const finalGegner = weg.length ? weg[weg.length-1].gegner : null;
+      pokalEintragen(turnier.meinIdx, finalGegner);
+      challengePruefen("titel");
+    }
     wmSpeichern();
     pokalZeigen();
   }
@@ -699,10 +1044,193 @@ function pokalZeigen(){
   }, 1400);
   setTimeout(()=>{ if(scr.pokal.classList.contains("active")) siuSound(); }, 1700);
 }
-$("pokalNeuBtn").onclick=()=>{ wmNeu(turnier.meinIdx); wmBaumZeigen("Titelverteidigung — neu ausgelost!"); };
-$("pokalMenuBtn").onclick=()=>{ setMode("wm"); show("setup"); };
+$("pokalNeuBtn").onclick=()=>{
+  if(mode==="wm2" && turnier2){ $("wmNeuBtn").click(); return; }
+  wmNeu(turnier.meinIdx);
+  wmBaumZeigen("Titelverteidigung — neu ausgelost!");
+};
+$("pokalMenuBtn").onclick=()=>{
+  if(mode==="wm2" && turnier2 && turnier2.chef) profilWaehlen(turnier2.chef);
+  setMode(mode);
+  show("setup");
+};
 
-/* ---------------- Beim Laden: offenes Turnier? ---------------- */
+/* ====================================================================
+   Weltmeisterschaft zu zweit — Ablauf über die Bildschirme
+   ==================================================================== */
+let wm2Partie = null;      // {pi, duell, spieler:[...]}
+
+function wm2BaumZeigen(hinweis){
+  /* Im Baum ist wieder der Menü-Besitzer aktiv, damit Vitrine und
+     Kopfzeile die richtige Person zeigen */
+  if(turnier2.chef) profilWaehlen(turnier2.chef);
+
+  $("baum").innerHTML=wm2BaumHTML();
+  const btn=$("wmSpielBtn");
+  const naechste=wm2NaechstePartie();
+  const s=turnier2.spieler;
+
+  $("wmTitel").textContent = turnier2.status==="fertig"
+    ? "Turnier beendet"
+    : WM_RUNDEN[turnier2.runde].name;
+
+  if(naechste){
+    let txt;
+    if(naechste.duell){
+      txt = `<b class="duellwarn">Duell!</b> ${s[0].profil} (${TEAMS[s[0].idx]}) gegen `+
+            `${s[1].profil} (${TEAMS[s[1].idx]}) — einer fliegt raus.`;
+      btn.textContent=`DUELL: ${KURZ[s[0].idx]} — ${KURZ[s[1].idx]}`;
+    } else {
+      const nr=naechste.spieler[0], g=wm2Gegner(nr);
+      txt = `<b>${s[nr].profil}</b> ist dran: ${TEAMS[s[nr].idx]} gegen ${TEAMS[g]}`;
+      btn.textContent=`ANSTOSS ${s[nr].profil}: ${KURZ[s[nr].idx]} — ${KURZ[g]}`;
+    }
+    $("wmUnter").innerHTML=(hinweis?hinweis+"<br>":"")+txt;
+    btn.style.display="block";
+    btn.onclick=()=>wm2PartieStarten(naechste);
+  } else if(turnier2.status==="fertig"){
+    const wm=wm2Weltmeister();
+    const mensch = turnier2.titel!=null;
+    $("wmUnter").innerHTML =
+      (mensch ? `<b>${wm2Name(turnier2.titel)}</b> ist Weltmeister mit ${TEAMS[wm]}!`
+              : `Weltmeister: <b>${TEAMS[wm]}</b> — kein Mensch im Final.`)+
+      `<br>${wm2StandText()}`;
+    btn.textContent = mensch ? "Pokalübergabe ansehen 🏆" : "Neues Turnier";
+    btn.style.display="block";
+    btn.onclick = mensch ? (()=>wm2PokalZeigen(turnier2.titel)) : (()=>$("wmNeuBtn").click());
+  } else {
+    /* Runde durch, aber keiner der zwei mehr dabei */
+    $("wmUnter").innerHTML=`Beide ausgeschieden — der Computer spielt zu Ende.<br>${wm2StandText()}`;
+    btn.textContent="Weiter";
+    btn.style.display="block";
+    btn.onclick=()=>{ wm2RestSimulieren(); wm2BaumZeigen(); };
+  }
+  show("wm");
+}
+
+/* Kurzer Text, wie weit die zwei gekommen sind */
+function wm2StandText(){
+  return [0,1].map(nr=>{
+    const r=turnier2.ausRunde[nr];
+    const wieWeit = (r==null)
+      ? (turnier2.titel===nr ? "Weltmeister 🏆" : "noch dabei")
+      : "aus im "+WM_RUNDEN[r].name;
+    return `${wm2Name(nr)}: ${wieWeit}`;
+  }).join(" · ");
+}
+
+/* Partie starten — das Profil des Spielers wird aktiv, damit Statistik
+   und Abzeichen bei der richtigen Person landen */
+function wm2PartieStarten(naechste){
+  wm2Partie=naechste;
+  wm2GegenMensch=!!naechste.duell;
+  const s=turnier2.spieler;
+  if(naechste.duell){
+    wm2Akt=0;
+    profilWaehlen(s[0].profil);
+    teamA={name:TEAMS[s[0].idx], idx:s[0].idx};
+    teamB={name:TEAMS[s[1].idx], idx:s[1].idx};
+  } else {
+    const nr=naechste.spieler[0];
+    wm2Akt=nr;
+    profilWaehlen(s[nr].profil);
+    const g=wm2Gegner(nr);
+    teamA={name:TEAMS[s[nr].idx], idx:s[nr].idx};
+    teamB={name:TEAMS[g], idx:g};
+  }
+  initAudio();
+  startGame();
+}
+
+/* Resultat der gespielten Partie in den Baum schreiben */
+function wm2ResultatBuchen(side){
+  if(!wm2Partie) return;
+  const pi=wm2Partie.pi;
+  const paar=wm2Runde().paare[pi];
+  const toreA=score(kicksA), toreB=score(kicksB);
+  const ga = paar[0]===teamA.idx ? toreA : toreB;
+  const gb = paar[0]===teamA.idx ? toreB : toreA;
+  const siegerIdx = (side==="A") ? teamA.idx : teamB.idx;
+  wm2ResultatEintragen(pi, siegerIdx, ga, gb);
+}
+
+/* Nach einer Partie: nächste Menschen-Partie, sonst Runde abschliessen */
+function wm2NachPartie(){
+  wm2GegenMensch=false;
+  const offen=wm2NaechstePartie();
+  if(offen){
+    wm2BaumZeigen(`Weiter — jetzt ist ${wm2Name(offen.spieler[0])} dran.`);
+    return;
+  }
+  wm2AndereSimulieren();
+  const weiter=wm2NaechsteRunde();
+  if(!weiter){
+    /* Final ist gespielt */
+    if(turnier2.titel!=null) wm2TitelBuchen(turnier2.titel);
+    wm2BaumZeigen();
+    return;
+  }
+  if(wm2BeideAus()){
+    wm2RestSimulieren();
+    if(turnier2.titel!=null) wm2TitelBuchen(turnier2.titel);
+    wm2BaumZeigen();
+    return;
+  }
+  wm2BaumZeigen(`${WM_RUNDEN[turnier2.runde].name}! ${wm2StandText()}`);
+}
+
+/* Pokal und Abzeichen dem richtigen Profil gutschreiben */
+function wm2TitelBuchen(nr){
+  if(turnier2.pokalGezaehlt) return;
+  turnier2.pokalGezaehlt=true;
+  const vorher=profile.aktiv;
+  profilWaehlen(wm2Name(nr));
+  const weg=wm2Weg(nr);
+  pokalEintragen(wm2Spieler(nr).idx, weg.length ? weg[weg.length-1].gegner : null);
+  challengePruefen("titel");
+  profilWaehlen(vorher || turnier2.chef);
+  wm2Speichern();
+}
+
+/* Pokalübergabe für den Sieger des Turniers zu zweit */
+function wm2PokalZeigen(nr){
+  const idx=wm2Spieler(nr).idx;
+  $("pokalFlag").innerHTML=flagHTML(idx,56);
+  $("pokalName").textContent=TEAMS[idx];
+  $("pokalPlayer").textContent=`${wm2Name(nr)} ist Weltmeister!`;
+  $("pokalWeg").innerHTML=`<div class="trost-weg">`+
+    wm2Weg(nr).map(w=>
+      `<div class="zeile ${w.gewonnen?"gewonnen":"verloren"}">`+
+      `<span class="rd">${wmRundenName(w.runde)}</span>`+
+      `${flagHTML(w.gegner,12)}<span>${TEAMS[w.gegner]}</span>`+
+      `<span class="erg">${w.meine}:${w.seine}</span></div>`).join("")+
+    `</div>`;
+  drawPokalSzene(idx);
+  show("pokal");
+
+  const buehne=$("pokalBuehne");
+  spawnConfetti(buehne, 110);
+  fanfare();
+  let welle=0;
+  const regen=setInterval(()=>{
+    welle++;
+    if(welle>4 || !scr.pokal.classList.contains("active")){ clearInterval(regen); return; }
+    spawnConfetti(buehne, 70);
+    if(welle===2) cheer();
+  }, 1400);
+  setTimeout(()=>{ if(scr.pokal.classList.contains("active")) siuSound(); }, 1700);
+}
+
+/* ---------------- Beim Laden ----------------
+   Ohne Profil zuerst die Frage "Wer spielt?", sonst gleich ins Menü —
+   und wenn dieses Profil ein Turnier offen hat, in den WM-Modus. */
 (function beimStart(){
+  if(!aktivProfil()){
+    profilScreenZeigen();
+    return;
+  }
   if(wmLaden()) setMode("wm");
+  else if(wm2Laden()) setMode("wm2");
+  else setMode("2p");
+  show("setup");
 })();

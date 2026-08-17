@@ -355,6 +355,7 @@ h1 .sub{display:block;font-size:.38em;letter-spacing:.42em;color:var(--gold);mar
 @keyframes bpop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
 .banner.goal{color:var(--gruen)}
 .banner.stop{color:var(--rot)}
+.banner.vorbei{color:#f08c3a}
 
 .next-btn{
   display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
@@ -435,6 +436,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   letter-spacing:.08em;color:var(--gold);line-height:1;
 }
 .wm-unter{font-size:15px;color:var(--kreide-dim);margin-top:6px;line-height:1.5}
+.duellwarn{color:var(--rot);letter-spacing:.04em}
 .baum-scroll{
   overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
   padding:4px 2px 10px;
@@ -465,6 +467,24 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .pz.sieger .pt{color:var(--gruen)}
 .pz.sieger b{color:var(--kreide)}
 .pz.mein b{color:var(--gold)}
+/* Zwei-Spieler-Turnier: Spieler 1 gold, Spieler 2 blau */
+.pz.mein2 b{color:#7fb4ff}
+.partie.ist-mein2{border-color:#7fb4ff;box-shadow:0 0 0 1px rgba(127,180,255,.5)}
+.partie.ist-duell{
+  border-color:var(--rot);
+  box-shadow:0 0 0 1px rgba(224,85,72,.6), 0 0 14px rgba(224,85,72,.35);
+}
+
+/* Spieler-2-Auswahl */
+.sp2-box{margin-top:6px}
+.sp2-liste{display:flex;gap:8px;flex-wrap:wrap}
+.sp2-btn{
+  background:transparent;color:var(--kreide);
+  border:1px solid rgba(242,245,239,.3);border-radius:10px;
+  padding:11px 18px;font:inherit;font-size:16px;cursor:pointer;min-height:44px;
+}
+.sp2-btn.sel{background:rgba(127,180,255,.18);border-color:#7fb4ff}
+.sp2-hinweis{font-size:14px;color:var(--kreide-dim);line-height:1.5}
 .pz.leer{opacity:.35}
 .pz.leer b{color:var(--kreide-dim)}
 .fl-leer{
@@ -551,6 +571,167 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   font-size:15px;color:var(--kreide-dim);margin-top:16px;flex-wrap:wrap;
 }
 
+/* ---------- Kraftbalken (Profi-Modus) ---------- */
+.kraft{
+  position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+  z-index:6;width:min(84%,420px);text-align:center;
+  background:rgba(8,20,14,.88);border:1px solid rgba(242,245,239,.3);
+  border-radius:12px;padding:10px 14px 8px;
+  backdrop-filter:blur(3px);
+}
+.kraft.show{display:block}
+.kraft-titel{
+  font-family:"Bebas Neue",sans-serif;font-size:20px;letter-spacing:.08em;
+  color:var(--gold);line-height:1;margin-bottom:7px;
+}
+.kraft-titel.perfekt{color:var(--gruen)}
+.kraft-titel.gut{color:var(--kreide)}
+.kraft-titel.daneben{color:var(--rot)}
+.kraft-skala{
+  position:relative;display:flex;height:26px;border-radius:7px;
+  overflow:hidden;border:1px solid rgba(0,0,0,.5);
+}
+.kraft-feld{height:100%}
+.kraft-feld.rot{flex:0 0 10%;background:linear-gradient(180deg,#e05548,#a33227)}
+.kraft-feld.gelb{flex:0 0 25%;background:linear-gradient(180deg,#f0c548,#c2921c)}
+.kraft-feld.gruen{flex:0 0 30%;background:linear-gradient(180deg,#4cd97b,#1f9e4d)}
+.kraft-marke{
+  position:absolute;top:-3px;bottom:-3px;width:5px;left:0;
+  background:#fff;border-radius:3px;
+  box-shadow:0 0 8px 2px rgba(255,255,255,.8);
+}
+.kraft-hilfe{font-size:11.5px;color:var(--kreide-dim);margin-top:5px}
+
+/* ---------- Profile ---------- */
+.prof-liste{display:flex;flex-direction:column;gap:8px}
+.prof-karte{
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  background:rgba(242,245,239,.03);color:var(--kreide);
+  border:1px solid rgba(242,245,239,.22);border-radius:10px;
+  padding:12px 16px;font:inherit;text-align:left;cursor:pointer;
+  min-height:44px;
+}
+.prof-karte.aktiv{border-color:var(--gold);background:rgba(240,197,72,.14)}
+.prof-name{font-family:"Bebas Neue",sans-serif;font-size:22px;letter-spacing:.05em}
+.prof-zeile{font-size:13px;color:var(--kreide-dim)}
+.prof-offen{font-size:12.5px;color:var(--gold)}
+.prof-neu{margin-top:8px}
+.prof-input{
+  width:100%;background:rgba(0,0,0,.3);color:var(--kreide);
+  border:1px solid rgba(242,245,239,.3);border-radius:10px;
+  padding:12px 14px;font:inherit;font-size:17px;min-height:44px;
+}
+.prof-input:focus{outline:2px solid var(--gold);outline-offset:2px}
+.prof-modus{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.prof-modus .mode-btn{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.mode-btn small{font-size:12px;color:var(--kreide-dim);font-weight:500}
+.mode-btn.sel small{color:rgba(242,245,239,.8)}
+
+/* Kopfzeile im Setup: wer spielt gerade */
+.prof-kopf{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;margin-bottom:16px;
+  padding-bottom:12px;border-bottom:1px solid rgba(242,245,239,.14);
+}
+.prof-wer{font-family:"Bebas Neue",sans-serif;font-size:24px;letter-spacing:.05em}
+.prof-wer small{
+  display:block;font-family:"Archivo Narrow",sans-serif;font-size:12.5px;
+  letter-spacing:0;color:var(--kreide-dim);font-weight:500;
+}
+.prof-kopf-btn{display:flex;gap:4px;flex-wrap:wrap}
+
+/* ---------- Tages-Aufgabe ---------- */
+.chall{
+  display:flex;align-items:center;gap:11px;
+  background:rgba(240,197,72,.10);
+  border:1px solid rgba(240,197,72,.4);border-radius:11px;
+  padding:11px 15px;margin-bottom:18px;
+}
+.chall.fertig{background:rgba(76,217,123,.12);border-color:rgba(76,217,123,.5)}
+.chall-icon{font-size:24px;line-height:1;flex:none}
+.chall-txt b{
+  display:block;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold);
+}
+.chall.fertig .chall-txt b{color:var(--gruen)}
+.chall-txt small{display:block;font-size:15px;line-height:1.4;margin-top:2px}
+
+/* ---------- Vitrine ---------- */
+.vitrine{display:flex;flex-direction:column;gap:16px}
+.vit-block{
+  background:var(--panel);border:1px solid rgba(242,245,239,.14);
+  border-radius:12px;padding:16px;
+}
+.vit-tit{
+  font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:12px;
+}
+.vit-leer{font-size:14.5px;color:var(--kreide-dim);line-height:1.5}
+.vit-pokale{display:flex;gap:14px;flex-wrap:wrap}
+.vit-pokal{
+  text-align:center;padding:10px 12px;border-radius:10px;
+  background:rgba(240,197,72,.10);border:1px solid rgba(240,197,72,.35);
+  min-width:96px;
+}
+.vit-pokal .pokal-svg{margin:0 auto}
+.vit-pokal .flag-svg{margin:6px auto 0}
+.vit-land{font-size:12.5px;font-weight:700;margin-top:4px}
+.vit-datum{font-size:11px;color:var(--kreide-dim)}
+.vit-azliste{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.vit-az{
+  display:flex;align-items:center;gap:9px;padding:9px 11px;
+  border:1px solid rgba(242,245,239,.14);border-radius:10px;
+  opacity:.38;filter:grayscale(1);
+}
+.vit-az.hat{opacity:1;filter:none;border-color:var(--gold);background:rgba(240,197,72,.10)}
+.vit-az .az-emoji{font-size:24px;line-height:1;flex:none}
+.vit-az .az-text{min-width:0}
+.vit-az b{font-size:13.5px;display:block;line-height:1.2}
+.vit-az small{font-size:11.5px;color:var(--kreide-dim);display:block;line-height:1.3}
+.vit-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px;text-align:center}
+.vit-stats b{
+  display:block;font-family:"Bebas Neue",sans-serif;font-size:30px;
+  line-height:1;color:var(--gold);
+}
+.vit-stats small{font-size:11.5px;color:var(--kreide-dim)}
+
+/* ---------- Abzeichen-Einblendung ---------- */
+.az-toast{
+  position:fixed;left:50%;bottom:22px;transform:translate(-50%,140%);
+  display:flex;align-items:center;gap:12px;z-index:40;
+  background:rgba(8,20,14,.95);border:1px solid var(--gold);
+  border-radius:12px;padding:12px 20px;
+  box-shadow:0 6px 30px rgba(0,0,0,.6);
+  transition:transform .4s cubic-bezier(.2,1.4,.4,1);
+  pointer-events:none;max-width:92vw;
+}
+.az-toast.show{transform:translate(-50%,0)}
+.az-toast .az-emoji{font-size:32px;line-height:1}
+.az-toast b{display:block;font-size:16px;color:var(--gold)}
+.az-toast small{display:block;font-size:12.5px;color:var(--kreide-dim)}
+
+/* ---------- Trefferserie ---------- */
+.serie-anz{
+  display:flex;align-items:center;gap:6px;
+  font-family:"Bebas Neue",sans-serif;font-size:19px;letter-spacing:.06em;
+  color:var(--gold);
+}
+.serie-anz.heiss{animation:seriepuls .8s ease-in-out infinite}
+@keyframes seriepuls{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+/* Ab drei Toren in Serie brennt der Ball */
+.ball.feuer{
+  box-shadow:
+    0 3px 8px rgba(0,0,0,.45),
+    inset -3px -4px 6px rgba(0,0,0,.25),
+    0 0 12px 4px rgba(255,150,40,.75),
+    0 0 26px 10px rgba(255,90,20,.45);
+  animation:ballfeuer .5s ease-in-out infinite alternate;
+}
+@keyframes ballfeuer{
+  from{filter:hue-rotate(0deg) saturate(1)}
+  to{filter:hue-rotate(-12deg) saturate(1.3)}
+}
+
 /* ---------- Tablet: Touch und Querformat ----------
    Kein Doppeltipp-Zoom auf Spielflächen, grosse Tap-Flächen und im
    Querformat soll die ganze Szene ohne Scrollen sichtbar sein. */
@@ -582,4 +763,6 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   .szene{transition:none;transform:none}
   .lage-fern{transform:none}
   .pitch.zeitlupe::after{animation:none}
+  .serie-anz.heiss,.ball.feuer{animation:none}
+  .az-toast{transition:none}
 }

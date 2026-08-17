@@ -201,6 +201,66 @@ function kameraZurueck(){
   sz.style.transform = KAMERA_RUHE;
 }
 
+/* ---------- Kraftbalken (Profi-Modus) ----------
+   Die Marke pendelt hin und her; wer im grünen Feld stoppt, schiesst
+   perfekt, wer im roten stoppt, setzt den Ball daneben. Läuft über
+   requestAnimationFrame, ohne Timer-Kaskade. Wird nach drei Durchläufen
+   von selbst ausgelöst, damit niemand ewig zögern kann. */
+const KRAFT_ROT = 0.10;      // Randzonen links und rechts
+const KRAFT_GELB = 0.25;     // je 25 Prozent daneben
+const KRAFT_DAUER = 1100;    // eine Richtung in Millisekunden
+const KRAFT_LAEUFE = 3;      // danach löst der Schuss selber aus
+
+let kraftAktiv = false, kraftFertig = null, kraftT0 = 0, kraftRAF = null;
+
+function kraftBewertung(wert){
+  if(wert < KRAFT_ROT || wert > 1-KRAFT_ROT) return "rot";
+  if(wert < KRAFT_ROT+KRAFT_GELB || wert > 1-KRAFT_ROT-KRAFT_GELB) return "gelb";
+  return "gruen";
+}
+
+function kraftStarten(fertig){
+  const box=$("kraft"), marke=$("kraftMarke");
+  kraftAktiv=true; kraftFertig=fertig; kraftT0=performance.now();
+  $("kraftTitel").textContent="Jetzt tippen!";
+  $("kraftTitel").className="kraft-titel";
+  box.style.display="block";
+
+  function schritt(now){
+    if(!kraftAktiv) return;
+    const t=(now-kraftT0)/KRAFT_DAUER;
+    /* Dreieckswelle: 0 → 1 → 0 → … */
+    const wert=Math.abs(((t % 2) + 2) % 2 - 1);
+    marke.style.left=(wert*100).toFixed(2)+"%";
+    if(t >= KRAFT_LAEUFE*2){ kraftStop(); return; }
+    kraftRAF=requestAnimationFrame(schritt);
+  }
+  kraftRAF=requestAnimationFrame(schritt);
+}
+
+/* Marke anhalten und das Ergebnis melden */
+function kraftStop(){
+  if(!kraftAktiv) return;
+  kraftAktiv=false;
+  if(kraftRAF) cancelAnimationFrame(kraftRAF);
+  const t=(performance.now()-kraftT0)/KRAFT_DAUER;
+  const wert=Math.abs(((t % 2) + 2) % 2 - 1);
+  const art=kraftBewertung(wert);
+  const titel=$("kraftTitel");
+  titel.textContent = art==="gruen" ? "PERFEKT!" : art==="gelb" ? "Gut getroffen" : "Verrissen!";
+  titel.className = "kraft-titel " + (art==="gruen" ? "perfekt" : art==="gelb" ? "gut" : "daneben");
+  const melde=kraftFertig;
+  kraftFertig=null;
+  setTimeout(()=>{ $("kraft").style.display="none"; }, 420);
+  if(melde) melde(art, wert);
+}
+function kraftLaeuft(){ return kraftAktiv; }
+function kraftAbbrechen(){
+  kraftAktiv=false; kraftFertig=null;
+  if(kraftRAF) cancelAnimationFrame(kraftRAF);
+  $("kraft").style.display="none";
+}
+
 /* ---------- Zeitlupe beim Matchball ---------- */
 function zeitlupeAn(){
   document.querySelector(".pitch").classList.add("zeitlupe");

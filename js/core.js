@@ -42,6 +42,15 @@ function bewegungReduziert(){
   return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }
 
+/* Ziel für einen verrissenen Schuss: knapp neben oder über das Tor.
+   Aussenspalten gehen am Pfosten vorbei, die Mitte über die Latte. */
+function danebenZiel(z){
+  const c=zoneCenterSVG(z), spalte=z%3;
+  if(spalte===0) return {x:GX-46, y:c.y-14};
+  if(spalte===2) return {x:GX+GW+46, y:c.y-14};
+  return {x:c.x+(Math.random()<0.5?-22:22), y:GY-46};
+}
+
 /* Zufallszahl 0 … n-1 */
 function zufall(n){ return Math.floor(Math.random() * n); }
 
