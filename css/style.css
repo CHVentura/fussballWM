@@ -355,6 +355,7 @@ h1 .sub{display:block;font-size:.38em;letter-spacing:.42em;color:var(--gold);mar
 @keyframes bpop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
 .banner.goal{color:var(--gruen)}
 .banner.stop{color:var(--rot)}
+.banner.vorbei{color:#f08c3a}
 
 .next-btn{
   display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
@@ -550,6 +551,37 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   display:flex;align-items:center;justify-content:center;gap:8px;
   font-size:15px;color:var(--kreide-dim);margin-top:16px;flex-wrap:wrap;
 }
+
+/* ---------- Kraftbalken (Profi-Modus) ---------- */
+.kraft{
+  position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+  z-index:6;width:min(84%,420px);text-align:center;
+  background:rgba(8,20,14,.88);border:1px solid rgba(242,245,239,.3);
+  border-radius:12px;padding:10px 14px 8px;
+  backdrop-filter:blur(3px);
+}
+.kraft.show{display:block}
+.kraft-titel{
+  font-family:"Bebas Neue",sans-serif;font-size:20px;letter-spacing:.08em;
+  color:var(--gold);line-height:1;margin-bottom:7px;
+}
+.kraft-titel.perfekt{color:var(--gruen)}
+.kraft-titel.gut{color:var(--kreide)}
+.kraft-titel.daneben{color:var(--rot)}
+.kraft-skala{
+  position:relative;display:flex;height:26px;border-radius:7px;
+  overflow:hidden;border:1px solid rgba(0,0,0,.5);
+}
+.kraft-feld{height:100%}
+.kraft-feld.rot{flex:0 0 10%;background:linear-gradient(180deg,#e05548,#a33227)}
+.kraft-feld.gelb{flex:0 0 25%;background:linear-gradient(180deg,#f0c548,#c2921c)}
+.kraft-feld.gruen{flex:0 0 30%;background:linear-gradient(180deg,#4cd97b,#1f9e4d)}
+.kraft-marke{
+  position:absolute;top:-3px;bottom:-3px;width:5px;left:0;
+  background:#fff;border-radius:3px;
+  box-shadow:0 0 8px 2px rgba(255,255,255,.8);
+}
+.kraft-hilfe{font-size:11.5px;color:var(--kreide-dim);margin-top:5px}
 
 /* ---------- Profile ---------- */
 .prof-liste{display:flex;flex-direction:column;gap:8px}

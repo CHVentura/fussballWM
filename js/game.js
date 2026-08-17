@@ -256,6 +256,7 @@ function nextKick(){
   versteckeZielkreuz();
   zeitlupeAus();
   kameraZurueck();
+  kraftAbbrechen();
 
   const keeper=$("keeper"), shooter=$("shooter");
   keeper.style.transition="none"; keeper.style.transform="";
@@ -322,10 +323,16 @@ function updateSecret(){
 
 /* ----- Eingabe ----- */
 document.addEventListener("keydown",e=>{
+  /* Im Profi-Modus stoppt jede Taste den Kraftbalken */
+  if(phase==="timing" && kraftLaeuft()){ kraftStop(); e.preventDefault(); return; }
   if(phase==="result" && (e.key==="Enter" || e.key===" ")){ $("nextBtn").click(); return; }
   const d=parseInt(e.key,10);
   if(!Number.isInteger(d) || !(d in KEY2ZONE)) return;
   handleZone(KEY2ZONE[d]);
+});
+/* Auf dem Tablet: Tipp irgendwo auf die Szene stoppt den Balken */
+document.querySelector(".pitch").addEventListener("pointerdown",()=>{
+  if(phase==="timing" && kraftLaeuft()) kraftStop();
 });
 
 function handleZone(z){
@@ -341,7 +348,8 @@ function handleZone(z){
       if(shooterIsComputer){
         setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,"Der Computer läuft an …",false);
         const ziel = (mode==="wm") ? wmSchussZone() : zufall(9);
-        setTimeout(()=>resolveShot(ziel), 600);
+        const tim = computerTiming();
+        setTimeout(()=>resolveShot(ziel, tim), 600);
       } else {
         setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,
           istMatchball() ? "Matchball — wähle deine Zone (1–9)!" : "Wähle deine Zone (1–9).", false);
@@ -349,8 +357,38 @@ function handleZone(z){
       }
     }
   } else if(phase==="shooter"){
-    resolveShot(z);
+    schussStarten(z);
   }
+}
+
+/* Im Anfänger-Modus geht der Schuss direkt los. Im Profi-Modus kommt
+   zuerst der Kraftbalken — der Mensch stoppt ihn selber, der Computer
+   bekommt seinen Wert ausgewürfelt (siehe computerTiming). */
+function schussStarten(z){
+  if(!timingAn()){ resolveShot(z, null); return; }
+  phase="timing";
+  versteckeZielkreuz();
+  setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,
+    "Kraftbalken stoppen — grün ist perfekt!", false);
+  kraftStarten(art=>{
+    phase="anim";
+    resolveShot(z, art);
+  });
+}
+
+/* Der Computer zielt im Profi-Modus auch nicht perfekt. Im Turnier wird
+   er von Runde zu Runde sicherer. */
+function computerTiming(){
+  if(!timingAn()) return null;
+  let danebenP=0.16, perfektP=0.26;
+  if(mode==="wm" && turnier){
+    danebenP = [0.20, 0.16, 0.12, 0.09][turnier.runde] || 0.14;
+    perfektP = [0.20, 0.26, 0.32, 0.38][turnier.runde] || 0.26;
+  }
+  const w=Math.random();
+  if(w < danebenP) return "rot";
+  if(w < danebenP + perfektP) return "gruen";
+  return "gelb";
 }
 
 /* ----- Matchball und Anspannung -----
@@ -376,8 +414,11 @@ function anspannung(){
   return spaeteRunde || istMatchball();
 }
 
-/* ----- Auswertung + Animation ----- */
-function resolveShot(z){
+/* ----- Auswertung + Animation -----
+   timing: null im Anfänger-Modus, sonst "rot" (daneben), "gelb"
+   (normal) oder "gruen" (perfekt — ein gedeckter Ball rutscht dem
+   Torwart dann manchmal durch). */
+function resolveShot(z, timing){
   phase="anim";
   $("secret").style.display="none";
   versteckeZielkreuz();
@@ -388,8 +429,13 @@ function resolveShot(z){
   const zeit = matchball ? 1.9 : 1;
   const schuetze = shooterPlayer();
 
+  const daneben = (timing==="rot");
   const covered = keeperZones.includes(z);
-  const goal = !covered;
+  /* Ein perfekter Schuss ist so hart, dass der Torwart ihn manchmal
+     nicht festhalten kann */
+  const durchgerutscht = covered && !daneben && timing==="gruen" && Math.random()<0.35;
+  const goal = !daneben && (!covered || durchgerutscht);
+  const ziel = daneben ? danebenZiel(z) : zoneCenterSVG(z);
 
   /* Im Turnier merkt sich der Computer meine Gewohnheiten */
   if(mode==="wm" && turnier){
@@ -421,13 +467,27 @@ function resolveShot(z){
     diveKeeper(z, covered, zeit);
 
     setTimeout(()=>{
-      flyBall(zoneCenterSVG(z), {dur:Math.round(460*zeit), endScale:0.58, arc:65, groundEnd:255}, ()=>{
+      const flug = daneben
+        ? {dur:Math.round(520*zeit), endScale:0.42, arc:88, groundEnd:200}
+        : {dur:Math.round(460*zeit), endScale:0.58, arc:65, groundEnd:255};
+      flyBall(ziel, flug, ()=>{
         phase="result";
         zeitlupeAus();
         keeperZones.forEach(k=>zoneEls[k].classList.add("kept"));
         const banner=$("banner");
         banner.classList.remove("pop"); void banner.offsetWidth;
-        if(goal){
+        let hinweis="";
+        if(daneben){
+          /* Verrissen: der Ball geht neben oder über das Tor */
+          banner.textContent="DANEBEN!";
+          banner.className="banner vorbei pop";
+          groan();
+          $("ball").classList.remove("live");
+          $("ball").style.opacity="0";
+          shooter.style.transition="transform .6s ease-out";
+          shooter.style.transform="translate(0px,5px) rotate(-9deg)";
+          hinweis="Den hat er verrissen — vorbei!";
+        } else if(goal){
           zoneEls[z].classList.add("hit");
           banner.textContent="TOOOR!";
           banner.className="banner goal pop";
@@ -437,6 +497,9 @@ function resolveShot(z){
           shooter.style.transform="translate(0px,2px)";
           shooter.classList.add("celebrate","joy");
           spawnConfetti(document.querySelector(".pitch"));
+          if(durchgerutscht){
+            hinweis="Perfekt geschossen — der Torwart kann ihn nicht halten!";
+          }
         } else {
           zoneEls[z].classList.add("shot-stop");
           banner.textContent="GEHALTEN!";
@@ -459,7 +522,7 @@ function resolveShot(z){
         if(goal) letzterTreffer[seite]=schuetze;
         schuetzeNr[seite]++;              // nächster Schütze ist dran
         serieBuchen(seite, goal);
-        statistikBuchen(seite, goal);
+        statistikBuchen(seite, goal, daneben);
         renderBoard(true);
 
         const result = checkDecided();
@@ -468,7 +531,7 @@ function resolveShot(z){
         } else {
           shootIsA = !shootIsA;
           $("nextBtn").classList.add("show");
-          setStatus(null,"","",false);
+          setStatus(null,"",hinweis,false);
           const flitzer = Math.random()<0.14;
           if(flitzer) setTimeout(runStreaker, 550);
           scheduleAuto(flitzer ? 3900 : 2400);
@@ -501,12 +564,12 @@ function serieBuchen(seite, goal){
 }
 
 /* ----- Statistik und Abzeichen ----- */
-function statistikBuchen(seite, goal){
+function statistikBuchen(seite, goal, daneben){
   if(seite===meineSeite()){
     statPlus("schuesse");
     if(goal) statPlus("tore");
-  } else if(!goal){
-    /* Der Gegner hat verschossen, während ich im Tor stand */
+  } else if(!goal && !daneben){
+    /* Echte Parade — ein Schuss neben das Tor zählt nicht als meine Leistung */
     statPlus("paraden");
     paradenPartie++;
     if(paradenPartie>=3) abzeichenGeben("katze");
