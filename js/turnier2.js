@@ -204,7 +204,7 @@ function wm2BaumHTML(){
   }
   const wm = wm2Weltmeister();
   const mensch = wm!=null && (wm===i0 || wm===i1);
-  html += `<div class="baum-sp sp-pokal"><div class="baum-tit">Weltmeister</div>`+
+  html += `<div class="baum-sp sp-pokal"><div class="baum-tit">Geldmeister</div>`+
           `<div class="baum-partien"><div class="pokal-feld${mensch?" ist-mein":""}">`+
           (wm!=null
             ? `<div class="pokal-mini">${pokalSVG(46)}</div>${flagHTML(wm,20)}<div class="pokal-land">${TEAMS[wm]}</div>`

@@ -92,7 +92,7 @@ function setMode(m){
   $("mwm2").classList.toggle("sel", m==="wm2");
   $("pickLbl").textContent =
     m==="wm2" ? "Zwei Teams wählen — zuerst Spieler 1, dann Spieler 2" :
-    m==="wm" ? "Dein Team für die WM wählen — der Rest wird ausgelost" :
+    m==="wm" ? "Dein Team für die Geldmeisterschaft wählen — der Rest wird ausgelost" :
     m==="1p" ? "Länder wählen — zuerst dein Team, dann der Computer"
              : "Länder wählen — zuerst Team 1, dann Team 2";
   $("startBtn").textContent = (m==="wm"||m==="wm2") ? "TURNIER STARTEN" : "ANSTOSS";
@@ -858,7 +858,7 @@ function wmFrageAktualisieren(){
   const t=(mode==="wm") ? wmLaden() : null;
   if(!t){ box.style.display="none"; return; }
   let stand;
-  if(t.status==="titel") stand="Weltmeister — Pokalübergabe";
+  if(t.status==="titel") stand="Geldmeister — Pokalübergabe";
   else if(t.status==="aus") stand="beendet im "+wmRundenName(t.ausRunde);
   else stand=wmRundenName(t.runde);
   $("wmFrageTxt").innerHTML =
@@ -896,7 +896,7 @@ $("wmNeuStartBtn").onclick=()=>{
   wmLoeschen();
   turnier=null;
   $("wmFrage").style.display="none";
-  $("pickLbl").textContent="Dein Team für die WM wählen — der Rest wird ausgelost";
+  $("pickLbl").textContent="Dein Team für die Geldmeisterschaft wählen — der Rest wird ausgelost";
 };
 
 /* ---------------- Turnierbaum-Ansicht ---------------- */
@@ -913,8 +913,8 @@ function wmBaumZeigen(hinweis){
     btn.style.display="block";
     btn.onclick=()=>wmPartieStarten();
   } else if(turnier.status==="titel"){
-    $("wmTitel").textContent="Weltmeister!";
-    $("wmUnter").innerHTML=`<b>${TEAMS[turnier.meinIdx]}</b> hat die WM gewonnen.`;
+    $("wmTitel").textContent="Geldmeister!";
+    $("wmUnter").innerHTML=`<b>${TEAMS[turnier.meinIdx]}</b> hat die Geldmeisterschaft gewonnen.`;
     btn.textContent="Pokalübergabe ansehen 🏆";
     btn.style.display="block";
     btn.onclick=()=>pokalZeigen();
@@ -1012,7 +1012,7 @@ function ausZeigen(){
 
   const wm=wmWeltmeister();
   $("ausWM").innerHTML = wm!=null
-    ? `Weltmeister 2026: ${flagHTML(wm,18)}<b>${TEAMS[wm]}</b>`
+    ? `Geldmeister: ${flagHTML(wm,18)}<b>${TEAMS[wm]}</b>`
     : "";
   show("aus");
   groan();
@@ -1092,8 +1092,8 @@ function wm2BaumZeigen(hinweis){
     const wm=wm2Weltmeister();
     const mensch = turnier2.titel!=null;
     $("wmUnter").innerHTML =
-      (mensch ? `<b>${wm2Name(turnier2.titel)}</b> ist Weltmeister mit ${TEAMS[wm]}!`
-              : `Weltmeister: <b>${TEAMS[wm]}</b> — kein Mensch im Final.`)+
+      (mensch ? `<b>${wm2Name(turnier2.titel)}</b> ist Geldmeister mit ${TEAMS[wm]}!`
+              : `Geldmeister: <b>${TEAMS[wm]}</b> — kein Mensch im Final.`)+
       `<br>${wm2StandText()}`;
     btn.textContent = mensch ? "Pokalübergabe ansehen 🏆" : "Neues Turnier";
     btn.style.display="block";
@@ -1113,7 +1113,7 @@ function wm2StandText(){
   return [0,1].map(nr=>{
     const r=turnier2.ausRunde[nr];
     const wieWeit = (r==null)
-      ? (turnier2.titel===nr ? "Weltmeister 🏆" : "noch dabei")
+      ? (turnier2.titel===nr ? "Geldmeister 🏆" : "noch dabei")
       : "aus im "+WM_RUNDEN[r].name;
     return `${wm2Name(nr)}: ${wieWeit}`;
   }).join(" · ");
@@ -1197,7 +1197,7 @@ function wm2PokalZeigen(nr){
   const idx=wm2Spieler(nr).idx;
   $("pokalFlag").innerHTML=flagHTML(idx,56);
   $("pokalName").textContent=TEAMS[idx];
-  $("pokalPlayer").textContent=`${wm2Name(nr)} ist Weltmeister!`;
+  $("pokalPlayer").textContent=`${wm2Name(nr)} ist Geldmeister!`;
   $("pokalWeg").innerHTML=`<div class="trost-weg">`+
     wm2Weg(nr).map(w=>
       `<div class="zeile ${w.gewonnen?"gewonnen":"verloren"}">`+

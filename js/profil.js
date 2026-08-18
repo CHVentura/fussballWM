@@ -13,7 +13,7 @@ const ALT_TURNIER_KEY = "elfmeter-wm-turnier-v1";   // Fassung vor den Profilen
    der Vitrine. "geheim" heisst: Bedingung wird erst nach dem Gewinn
    verraten, damit es eine Überraschung bleibt. */
 const ABZEICHEN = [
-  {id:"titel",         e:"🏆", name:"Weltmeister",   txt:"Ein Turnier gewonnen"},
+  {id:"titel",         e:"🏆", name:"Geldmeister",   txt:"Ein Turnier gewonnen"},
   {id:"hattrick",      e:"🎩", name:"Hattrick",      txt:"3 Tore hintereinander"},
   {id:"unaufhaltsam",  e:"🔥", name:"Unaufhaltsam",  txt:"5 Tore hintereinander"},
   {id:"katze",         e:"🧤", name:"Katze",         txt:"3 Paraden in einer Partie"},
