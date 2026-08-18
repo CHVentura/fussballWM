@@ -185,13 +185,19 @@ function kameraSchwenk(zone, dauerMs, naeher){
     $("szene").style.transform = "";
     return;
   }
-  const c = zoneCenterSVG(zone);
-  const ry = -((c.x - 300) / 230) * 3.5;      // seitlich, bis ±3.5 Grad
-  const rx = ((141 - c.y) / 111) * 1.6;       // hoch/tief, bis ±1.6 Grad
   /* Sehr wenig Zoom — mehr würde Latte und obere Zonen abschneiden */
   const zoom = naeher ? 1.035 : 1.02;
   const sz = $("szene");
   if(dauerMs) sz.style.transitionDuration = (dauerMs/1000).toFixed(2)+"s";
+  if(istGrobzeiger()){
+    /* Touch: keine 3D-Neigung — auf iPad/Safari verpasst die
+       Tipp-Erkennung sonst manchmal die Zonen (siehe istGrobzeiger). */
+    sz.style.transform = `scale(${zoom})`;
+    return;
+  }
+  const c = zoneCenterSVG(zone);
+  const ry = -((c.x - 300) / 230) * 3.5;      // seitlich, bis ±3.5 Grad
+  const rx = ((141 - c.y) / 111) * 1.6;       // hoch/tief, bis ±1.6 Grad
   sz.style.transform =
     `scale(${zoom}) rotateY(${ry.toFixed(2)}deg) rotateX(${rx.toFixed(2)}deg)`;
 }

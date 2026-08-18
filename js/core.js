@@ -42,6 +42,14 @@ function bewegungReduziert(){
   return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }
 
+/* Touch-Gerät (kein Hover)? iOS Safari erkennt Taps auf Elementen in
+   einer aktiv rotierenden 3D-Ebene (preserve-3d + rotateX/rotateY)
+   manchmal nicht — die Kamera-Neigung bleibt darum auf Touch-Geräten
+   aus, den Zoom gibt es weiterhin. */
+function istGrobzeiger(){
+  return !!(window.matchMedia && window.matchMedia("(hover: none)").matches);
+}
+
 /* Ziel für einen verrissenen Schuss: knapp neben oder über das Tor.
    Aussenspalten gehen am Pfosten vorbei, die Mitte über die Latte. */
 function danebenZiel(z){

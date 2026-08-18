@@ -743,6 +743,12 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
      markiert, Hover ist nur Zusatz. */
   .mode-btn:hover,.flag-card:hover{border-color:inherit}
   .zone:hover{fill:transparent}
+  /* Kein dauerndes 3D-Wackeln auf Touch-Geräten: iOS Safari erkennt
+     Taps auf Elementen in einer aktiv rotierenden preserve-3d-Ebene
+     manchmal nicht (die Zonen liegen in #goal, einem Kind von
+     .szene-atem). js/effekte.js hält aus demselben Grund auch den
+     Kameraschwenk beim Schuss frei von rotateX/rotateY. */
+  .szene-atem{animation:none}
 }
 @media (orientation:landscape) and (max-height:760px){
   body{padding:10px 14px 22px}
