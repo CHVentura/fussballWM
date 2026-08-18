@@ -48,7 +48,7 @@ Statische Website, lauffähig über GitHub Pages.
 - Nach jeder Phase alle Modi gedanklich durchtesten:
   1. 2 Spieler am gleichen Gerät (Torwart wählt verdeckt 3 Zonen, Schütze 1 Zone)
   2. 1 Spieler gegen Computer (beide Rollen wechseln korrekt)
-  3. Weltmeisterschaft (Turnierbaum, Speichern/Weiterspielen, Titel und Ausscheiden)
+  3. Geldmeisterschaft (Turnierbaum, Speichern/Weiterspielen, Titel und Ausscheiden)
   - dazu: Sudden Death, Sound an/aus, Tastatur 1–9, Klick/Tipp auf Zonen,
     Neues Spiel, Tablet-Querformat
 - Performance im Blick behalten (ältere Tablets): CSS-Animationen bevorzugen,

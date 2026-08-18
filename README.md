@@ -1,4 +1,4 @@
-# ⚽ Elfmeterschiessen — WM 2026
+# ⚽ Elfmeterschiessen — Geldmeisterschaft
 
 Ein Elfmeterschiessen-Spiel für den Browser. Läuft auf dem Tablet, am Handy
 und am Computer. Kein Download, keine Installation.
@@ -45,7 +45,7 @@ entdeckst sie beim Spielen:
 
 | | Abzeichen | So bekommst du es |
 |---|---|---|
-| 🏆 | Weltmeister | Ein Turnier gewinnen |
+| 🏆 | Geldmeister | Ein Turnier gewinnen |
 | 🎩 | Hattrick | 3 Tore hintereinander |
 | 🔥 | Unaufhaltsam | 5 Tore hintereinander |
 | 🧤 | Katze | 3 Elfmeter in einer Partie halten |
@@ -105,7 +105,7 @@ seine Felder wählt!
 ### 2. Ein Spieler gegen Computer
 Du spielst allein. Der Computer ist abwechselnd Torwart und Schütze.
 
-### 3. Weltmeisterschaft 🏆
+### 3. Geldmeisterschaft 🏆
 Das grosse Turnier:
 
 - Du wählst **dein Land**. Der Computer lost **16 Mannschaften** aus —
@@ -120,10 +120,10 @@ Das grosse Turnier:
 - Ab dem Halbfinal **wackelt das Zielkreuz** — die Anspannung ist gross.
 - Kann ein Schuss die Partie entscheiden, läuft der Ball in **Zeitlupe**.
 - Gewinnst du den Final, gibt es die **Pokalübergabe** mit goldenem
-  WM-Pokal und Konfetti. Wirst du vorher ausgeschieden, siehst du, wie weit
-  du gekommen bist und wer Weltmeister geworden ist.
+  Pokal und Konfetti. Wirst du vorher ausgeschieden, siehst du, wie weit
+  du gekommen bist und wer Geldmeister geworden ist.
 
-### 4. WM zu zweit 🏆🏆
+### 4. Geldmeisterschaft zu zweit 🏆🏆
 Das Turnier für zwei Kinder am gleichen Tablet — dafür braucht es **zwei
 Profile**.
 
@@ -136,7 +136,7 @@ Profile**.
   **Duell** am Gerät, einer fliegt raus. Der eine ist Torwart, der andere
   Schütze — und nach jedem Schuss wird gewechselt.
 - Scheidet einer aus, spielt der andere weiter. Sind beide draussen, rechnet
-  der Computer das Turnier zu Ende, damit ihr sehen könnt, wer Weltmeister
+  der Computer das Turnier zu Ende, damit ihr sehen könnt, wer Geldmeister
   wird.
 - Der Pokal landet in der Vitrine von dem, der gewonnen hat.
 
@@ -181,11 +181,11 @@ css/style.css       Gestaltung und alle CSS-Animationen
 js/core.js          Helfer und Geometrie des Tors
 js/teams.js         Länder, Schützen, Flaggen, Spielstärken
 js/audio.js         Töne über die Web Audio API
-js/figuren.js       Spielerfiguren und WM-Pokal
+js/figuren.js       Spielerfiguren und Pokal
 js/effekte.js       Kulisse, Ballflug, Kamera, Kraftbalken, Konfetti
 js/profil.js        Profile, Vitrine, Abzeichen, Tages-Aufgabe
-js/turnier.js       WM-Modus: Auslosung, Simulation, Turnierbaum
-js/turnier2.js      WM zu zweit: zwei Wege im gleichen Baum, Duelle
+js/turnier.js       Geldmeisterschaft: Auslosung, Simulation, Turnierbaum
+js/turnier2.js      Geldmeisterschaft zu zweit: zwei Wege im gleichen Baum, Duelle
 js/game.js          Spielablauf und Bildschirmwechsel
 archiv/             die ursprüngliche Einzeldatei
 ```

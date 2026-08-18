@@ -17,7 +17,7 @@ const WM_RUNDEN = [
   {name:"Achtelfinal",  partien:8, zonen:3, extraZone:0,    lernen:0.00, lernenSchuss:0.00, tw:"Der Torwart ist noch nervös."},
   {name:"Viertelfinal", partien:4, zonen:3, extraZone:0,    lernen:0.25, lernenSchuss:0.15, tw:"Der Torwart schaut genau hin."},
   {name:"Halbfinal",    partien:2, zonen:3, extraZone:0.25, lernen:0.45, lernenSchuss:0.30, tw:"Der Torwart kennt deine Lieblingsecke."},
-  {name:"Final",        partien:1, zonen:3, extraZone:0.50, lernen:0.60, lernenSchuss:0.40, tw:"Der beste Torwart der WM steht im Tor!"}
+  {name:"Final",        partien:1, zonen:3, extraZone:0.50, lernen:0.60, lernenSchuss:0.40, tw:"Der beste Torwart des Turniers steht im Tor!"}
 ];
 
 /* Aktueller Turnierstand (null = kein Turnier) */
@@ -284,7 +284,7 @@ function wmBaumHTML(){
           `<div class="baum-partien">${partien}</div></div>`;
   }
   const wm=wmWeltmeister();
-  html+=`<div class="baum-sp sp-pokal"><div class="baum-tit">Weltmeister</div>`+
+  html+=`<div class="baum-sp sp-pokal"><div class="baum-tit">Geldmeister</div>`+
         `<div class="baum-partien"><div class="pokal-feld${wm===turnier.meinIdx?" ist-mein":""}">`+
         (wm!=null
           ? `<div class="pokal-mini">${pokalSVG(46)}</div>${flagHTML(wm,20)}<div class="pokal-land">${TEAMS[wm]}</div>`
