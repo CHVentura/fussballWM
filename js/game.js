@@ -170,6 +170,17 @@ function show(name){
    ==================================================================== */
 function profilScreenZeigen(){
   $("profListe").innerHTML = profilListeHTML();
+  profilKartenBinden();
+  $("profName").value="";
+  neuProfilModus = "anfaenger";
+  profilModusKnoepfe();
+  show("profil");
+}
+
+/* Karten anklickbar machen — auch nach dem Einlesen einer Sicherung.
+   Der Lösch-Knopf liegt in der Karte, darum muss er das Weiterreichen
+   des Tipps stoppen, sonst würde das Profil zugleich gewählt. */
+function profilKartenBinden(){
   [...document.querySelectorAll(".prof-karte")].forEach(k=>{
     k.onclick=()=>{
       profilWaehlen(k.getAttribute("data-name"));
@@ -177,10 +188,17 @@ function profilScreenZeigen(){
       nachProfilwahl();
     };
   });
-  $("profName").value="";
-  neuProfilModus = "anfaenger";
-  profilModusKnoepfe();
-  show("profil");
+  [...document.querySelectorAll(".prof-loeschen")].forEach(b=>{
+    b.onclick=(e)=>{
+      e.stopPropagation();
+      const name=b.getAttribute("data-name");
+      if(!confirm(`Profil "${name}" wirklich löschen? Pokale und Abzeichen sind dann weg.`)) return;
+      profilLoeschen(name);
+      $("profListe").innerHTML=profilListeHTML();
+      profilKartenBinden();
+      sicherMeldung(`Profil "${name}" gelöscht.`, true);
+    };
+  });
 }
 let neuProfilModus = "anfaenger";
 function profilModusKnoepfe(){
@@ -219,6 +237,88 @@ $("modusBtn").onclick=()=>{
   $("modusBtn").textContent = neu==="profi" ? "Modus: Profi" : "Modus: Anfänger";
 };
 $("profWechselBtn").onclick=()=>profilScreenZeigen();
+
+/* ---------------- Sicherung: Export und Import ---------------- */
+function sicherMeldung(text, gut){
+  const m=$("sicherMeldung");
+  m.textContent=text||"";
+  m.className="sicher-meldung"+(text ? (gut ? " gut" : " schlecht") : "");
+}
+$("sicherAufBtn").onclick=()=>{
+  const box=$("sicherInhalt");
+  const auf = box.style.display!=="none";
+  box.style.display = auf ? "none" : "block";
+  $("sicherAufBtn").textContent = auf ? "🗂 Sicherung" : "🗂 Sicherung schliessen";
+  if(auf){
+    $("sicherExport").style.display="none";
+    $("sicherImport").style.display="none";
+    sicherMeldung("");
+  }
+};
+$("sicherZeigenBtn").onclick=()=>{
+  $("sicherAus").value = sicherungText();
+  $("sicherExport").style.display="block";
+  $("sicherImport").style.display="none";
+  sicherMeldung(`${profile.liste.length} ${profile.liste.length===1?"Profil":"Profile"} gesichert.`, true);
+};
+$("sicherLesenBtn").onclick=()=>{
+  $("sicherImport").style.display="block";
+  $("sicherExport").style.display="none";
+  sicherMeldung("");
+};
+$("sicherKopierBtn").onclick=()=>{
+  const feld=$("sicherAus");
+  const text=feld.value;
+  /* Erst die moderne Zwischenablage, sonst der alte Weg über die
+     Textauswahl — auf älteren iPads gibt es navigator.clipboard nicht. */
+  const altWeg=()=>{
+    feld.focus();
+    feld.setSelectionRange(0, text.length);
+    let ok=false;
+    try{ ok=document.execCommand("copy"); }catch(e){}
+    sicherMeldung(ok ? "Kopiert — jetzt in eine Notiz oder Mail einfügen."
+                     : "Kopieren hat nicht geklappt. Text von Hand auswählen und kopieren.", ok);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text)
+      .then(()=>sicherMeldung("Kopiert — jetzt in eine Notiz oder Mail einfügen.", true))
+      .catch(altWeg);
+  } else altWeg();
+};
+$("sicherDateiBtn").onclick=()=>{
+  try{
+    const blob=new Blob([sicherungText()], {type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url; a.download=sicherungDateiname();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    sicherMeldung("Datei gespeichert: "+sicherungDateiname(), true);
+  }catch(e){
+    sicherMeldung("Das Speichern als Datei geht hier nicht — nimm den Weg über \u201eText kopieren\u201c.", false);
+  }
+};
+$("sicherStartBtn").onclick=()=>{
+  const text=$("sicherEin").value.trim();
+  if(!text){ sicherMeldung("Zuerst den Sicherungs-Text einfügen.", false); return; }
+  const erg=sicherungEinlesen(text);
+  if(erg.fehler){ sicherMeldung(erg.fehler, false); return; }
+  $("sicherEin").value="";
+  sicherMeldung(`Eingelesen: ${erg.dazu.join(", ")}. Tipp auf den Namen, um zu spielen.`, true);
+  $("profListe").innerHTML=profilListeHTML();
+  profilKartenBinden();
+};
+$("sicherDatei").addEventListener("change", e=>{
+  const datei=e.target.files && e.target.files[0];
+  if(!datei) return;
+  const leser=new FileReader();
+  leser.onload=()=>{ $("sicherEin").value=String(leser.result||""); sicherMeldung("Datei gelesen — jetzt auf Einlesen tippen.", true); };
+  leser.onerror=()=>sicherMeldung("Die Datei liess sich nicht lesen.", false);
+  leser.readAsText(datei);
+  e.target.value="";   // gleiche Datei nochmals wählbar
+});
 $("vitrineBtn").onclick=()=>vitrineZeigen();
 $("vitZurueckBtn").onclick=()=>show("setup");
 

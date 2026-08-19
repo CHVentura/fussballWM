@@ -39,6 +39,57 @@
         im richtigen Moment tippen, sonst geht der Ball daneben. Das lässt sich
         später jederzeit umstellen.
       </p>
+
+      <!-- Sicherung: Profile mitnehmen oder zurückholen -->
+      <div class="sicher-box">
+        <button class="link-btn" id="sicherAufBtn" type="button">🗂 Sicherung</button>
+        <div class="sicher-inhalt" id="sicherInhalt" style="display:none">
+          <p class="hint sicher-hint">
+            Pokale und Abzeichen liegen nur in diesem Browser. Wer die
+            Website-Daten löscht, verliert sie. Mit einer Sicherung nimmst du
+            alles mit — auf ein anderes Gerät oder einfach zur Aufbewahrung.
+          </p>
+          <div class="sicher-reihe">
+            <button class="start-btn schmal" id="sicherZeigenBtn" type="button">Sicherung erstellen</button>
+            <button class="start-btn schmal hell" id="sicherLesenBtn" type="button">Sicherung einlesen</button>
+          </div>
+
+          <!-- Export -->
+          <div class="sicher-teil" id="sicherExport" style="display:none">
+            <div class="label">Deine Sicherung</div>
+            <textarea class="sicher-feld" id="sicherAus" readonly rows="4"></textarea>
+            <div class="sicher-reihe">
+              <button class="start-btn schmal" id="sicherKopierBtn" type="button">Text kopieren</button>
+              <button class="start-btn schmal hell" id="sicherDateiBtn" type="button">Als Datei speichern</button>
+            </div>
+            <p class="hint sicher-hint">
+              Am einfachsten: <b>Text kopieren</b> und in eine Notiz oder Mail an
+              dich selber einfügen. Zum Zurückholen denselben Text bei
+              <b>Sicherung einlesen</b> einfügen.
+            </p>
+          </div>
+
+          <!-- Import -->
+          <div class="sicher-teil" id="sicherImport" style="display:none">
+            <div class="label">Sicherung einlesen</div>
+            <textarea class="sicher-feld" id="sicherEin" rows="4"
+                      placeholder="Sicherungs-Text hier einfügen"></textarea>
+            <div class="sicher-reihe">
+              <button class="start-btn schmal" id="sicherStartBtn" type="button">Einlesen</button>
+              <label class="start-btn schmal hell sicher-datei-btn">
+                Datei wählen
+                <input type="file" id="sicherDatei" accept=".json,application/json,text/plain">
+              </label>
+            </div>
+            <p class="hint sicher-hint">
+              Bestehende Profile bleiben erhalten. Gibt es einen Namen schon,
+              kommt das eingelesene Profil als <b>Name (2)</b> dazu.
+            </p>
+          </div>
+
+          <div class="sicher-meldung" id="sicherMeldung"></div>
+        </div>
+      </div>
     </div>
   </section>
 

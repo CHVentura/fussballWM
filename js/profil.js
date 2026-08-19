@@ -349,6 +349,111 @@ function datumKurz(ms){
   }catch(e){ return ""; }
 }
 
+/* ====================================================================
+   Sicherung: Profile als Text exportieren und wieder einlesen
+   Alles liegt nur im Browser. Wer die Website-Daten löscht, verliert
+   Pokale und Abzeichen — darum gibt es eine Sicherung zum Mitnehmen.
+   ==================================================================== */
+const SICHERUNG_MARKE = "elfmeterschiessen-profile";
+const SICHERUNG_FASSUNG = 1;
+
+/* Alle Profile als lesbarer Text (JSON) */
+function sicherungText(){
+  return JSON.stringify({
+    marke: SICHERUNG_MARKE,
+    fassung: SICHERUNG_FASSUNG,
+    erstellt: Date.now(),
+    aktiv: profile.aktiv,
+    liste: profile.liste
+  }, null, 1);
+}
+
+/* Dateiname mit Datum, damit mehrere Sicherungen unterscheidbar sind */
+function sicherungDateiname(){
+  const d = new Date();
+  const zz = n => ("0"+n).slice(-2);
+  return `elfmeter-profile-${d.getFullYear()}-${zz(d.getMonth()+1)}-${zz(d.getDate())}.json`;
+}
+
+/* Ein Profil aus der Sicherung säubern: nur bekannte Felder übernehmen,
+   damit fremder oder beschädigter Inhalt nichts kaputt macht. */
+function profilSaeubern(rohr){
+  if(!rohr || typeof rohr !== "object") return null;
+  const name = String(rohr.name||"").trim().slice(0,14);
+  if(!name) return null;
+  const sauber = neuesProfilObjekt(name, rohr.modus);
+
+  if(rohr.stats && typeof rohr.stats === "object"){
+    Object.keys(sauber.stats).forEach(k=>{
+      const w = rohr.stats[k];
+      if(k === "laender"){
+        sauber.stats.laender = Array.isArray(w)
+          ? w.filter(x=>typeof x==="number" && x>=0 && x<TEAMS.length)
+          : [];
+      } else if(typeof w === "number" && isFinite(w) && w>=0){
+        sauber.stats[k] = Math.floor(w);
+      }
+    });
+    if(typeof rohr.stats.challenges === "number" && rohr.stats.challenges>=0){
+      sauber.stats.challenges = Math.floor(rohr.stats.challenges);
+    }
+  }
+  if(rohr.abzeichen && typeof rohr.abzeichen === "object"){
+    ABZEICHEN.forEach(a=>{
+      if(rohr.abzeichen[a.id]) sauber.abzeichen[a.id] = rohr.abzeichen[a.id];
+    });
+  }
+  if(Array.isArray(rohr.pokale)){
+    sauber.pokale = rohr.pokale
+      .filter(k=>k && typeof k.team === "number" && k.team>=0 && k.team<TEAMS.length)
+      .map(k=>({team:k.team, gegner:(typeof k.gegner==="number"?k.gegner:null), datum:k.datum||Date.now()}));
+  }
+  /* Turnier und Tages-Aufgabe unverändert übernehmen, wenn sie plausibel
+     aussehen — sonst weglassen, das kostet nur die laufende Partie. */
+  const t = rohr.turnier;
+  if(t && typeof t.meinIdx === "number" && Array.isArray(t.runden) && t.runden.length){
+    sauber.turnier = t;
+  }
+  if(rohr.challenge && typeof rohr.challenge === "object") sauber.challenge = rohr.challenge;
+  return sauber;
+}
+
+/* Sicherung einlesen. Bestehende Profile bleiben immer erhalten: bei
+   gleichem Namen wird "Name (2)" angelegt. Rückgabe: Meldung für den
+   Nutzer, oder {fehler:"..."} wenn der Text nicht passt. */
+function sicherungEinlesen(text){
+  let daten;
+  try{ daten = JSON.parse(text); }
+  catch(e){ return {fehler:"Das ist keine gültige Sicherung — der Text lässt sich nicht lesen."}; }
+
+  if(!daten || typeof daten !== "object" || !Array.isArray(daten.liste)){
+    return {fehler:"Das ist keine Sicherung von diesem Spiel."};
+  }
+  if(daten.marke && daten.marke !== SICHERUNG_MARKE){
+    return {fehler:"Diese Sicherung gehört zu einem anderen Spiel."};
+  }
+
+  const dazu = [];
+  daten.liste.forEach(rohr=>{
+    const sauber = profilSaeubern(rohr);
+    if(!sauber) return;
+    /* Namen eindeutig halten, damit nichts überschrieben wird */
+    let endgueltig = sauber.name, n = 2;
+    while(profile.liste.some(p=>p.name===endgueltig)){
+      endgueltig = sauber.name.slice(0,11) + " (" + n + ")";
+      n++;
+    }
+    sauber.name = endgueltig;
+    profile.liste.push(sauber);
+    dazu.push(endgueltig);
+  });
+
+  if(!dazu.length) return {fehler:"In der Sicherung ist kein Profil zum Einlesen."};
+  if(!profile.aktiv) profile.aktiv = dazu[0];
+  profileSpeichern();
+  return {dazu: dazu};
+}
+
 /* Profil-Liste zur Auswahl */
 function profilListeHTML(){
   if(!profile.liste.length){
@@ -361,6 +466,7 @@ function profilListeHTML(){
       <span class="prof-name">${p.name}</span>
       <span class="prof-zeile">🏆 ${p.pokale.length} · 🏅 ${az} · ${p.modus==="profi"?"Profi":"Anfänger"}</span>
       ${offen ? `<span class="prof-offen">Turnier läuft: ${TEAMS[p.turnier.meinIdx]}</span>` : ``}
+      <span class="prof-loeschen" role="button" title="Profil löschen" data-name="${p.name}">🗑</span>
     </button>`;
   }).join("");
 }
