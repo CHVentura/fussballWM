@@ -243,10 +243,25 @@ const KADER_GROESSE = 11;
 const ZUSATZ_NUMMERN = [3, 12, 13, 16, 18, 21, 24, 2, 5, 6, 20];
 const ZUSATZ_STILE = ["short","short","buzz","curly","short","bun"];
 
+/* Können pro Kaderplatz (1 bis 5 Sterne). Platz 1 ist immer der beste
+   Schütze, die Ersatzleute können weniger. Bewusst für alle Länder
+   gleich: sonst wäre es unfair, mit einem kleinen Land zu spielen.
+   Wirkt nur im Profi-Modus, dort auf den Kraftbalken — im
+   Anfänger-Modus bleibt jeder Schuss gleich fair. */
+const KOENNEN_PLATZ = [5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2];
+
+/* Sterne als Text, für die Anzeige beim Schützen */
+function sterne(koennen){
+  const k = Math.max(1, Math.min(6, koennen||3));
+  return k >= 6 ? "★★★★★+" : "★".repeat(k) + "☆".repeat(5-k);
+}
+
 const kaderCache = [];
 function kaderVoll(i){
   if(kaderCache[i]) return kaderCache[i];
-  const voll = KADER[i].slice();
+  /* Kopien anlegen und das Können vom Kaderplatz mitgeben — die
+     Einträge in KADER bleiben unberührt (stern() nutzt sie auch). */
+  const voll = KADER[i].map((sp,k)=>Object.assign({}, sp, {koennen: KOENNEN_PLATZ[k]}));
   const belegt = voll.map(s=>s.num);
   /* Haut- und Haarfarben aus den bekannten Spielern des Landes nehmen,
      damit die Ersatzleute zum Team passen */
@@ -273,7 +288,8 @@ function kaderVoll(i){
       num: num,
       skin: skins[misch % skins.length],
       hair: haare[(misch + 2) % haare.length],
-      style: ZUSATZ_STILE[(misch + k) % ZUSATZ_STILE.length]
+      style: ZUSATZ_STILE[(misch + k) % ZUSATZ_STILE.length],
+      koennen: KOENNEN_PLATZ[k]
     });
     n++;
   }

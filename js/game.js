@@ -519,12 +519,17 @@ function schussStarten(z){
   if(!timingAn()){ resolveShot(z, null); return; }
   phase="timing";
   versteckeZielkreuz();
-  setStatus(curShooter().idx, `${shooterPlayer().p} — ${schuetzePos()}. Schütze`,
-    "Kraftbalken stoppen — grün ist perfekt!", false);
+  const sp=shooterPlayer();
+  setStatus(curShooter().idx, `${sp.p} ${sterne(sp.koennen)}`,
+    sp.koennen>=5 ? "Kraftbalken stoppen — er trifft fast immer!"
+    : sp.koennen<=2 ? "Kraftbalken stoppen — schwieriger Schütze, kleines grünes Feld!"
+    : "Kraftbalken stoppen — grün ist perfekt!", false);
+  /* Schwächere Schützen haben ein kleineres grünes Feld und einen
+     schnelleren Balken (siehe KRAFT_STUFEN in effekte.js) */
   kraftStarten(art=>{
     phase="anim";
     resolveShot(z, art);
-  });
+  }, sp.koennen);
 }
 
 /* Der Computer zielt im Profi-Modus auch nicht perfekt. Im Turnier wird
@@ -536,6 +541,13 @@ function computerTiming(){
     danebenP = [0.20, 0.16, 0.12, 0.09][turnier.runde] || 0.14;
     perfektP = [0.20, 0.26, 0.32, 0.38][turnier.runde] || 0.26;
   }
+  /* Auch beim Computer zählt, wer schiesst: ein Ersatzspieler verzieht
+     öfter als der beste Schütze des Landes. */
+  const k = shooterPlayer().koennen || 4;
+  danebenP += (4-k)*0.035;
+  perfektP += (k-4)*0.045;
+  danebenP = Math.max(0.04, Math.min(0.34, danebenP));
+  perfektP = Math.max(0.06, Math.min(0.46, perfektP));
   const w=Math.random();
   if(w < danebenP) return "rot";
   if(w < danebenP + perfektP) return "gruen";

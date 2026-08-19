@@ -212,21 +212,50 @@ function kameraZurueck(){
    perfekt, wer im roten stoppt, setzt den Ball daneben. Läuft über
    requestAnimationFrame, ohne Timer-Kaskade. Wird nach drei Durchläufen
    von selbst ausgelöst, damit niemand ewig zögern kann. */
-const KRAFT_ROT = 0.10;      // Randzonen links und rechts
-const KRAFT_GELB = 0.25;     // je 25 Prozent daneben
-const KRAFT_DAUER = 1100;    // eine Richtung in Millisekunden
 const KRAFT_LAEUFE = 3;      // danach löst der Schuss selber aus
 
+/* Je Können (1 bis 6 Sterne) ein eigener Schwierigkeitsgrad: schwächere
+   Schützen haben ein kleineres grünes Feld, breitere rote Ränder und
+   einen schnelleren Balken. Index 0 wird nie gebraucht. */
+const KRAFT_STUFEN = [
+  null,
+  {rot:0.19, gruen:0.14, dauer: 880},   // 1 Stern
+  {rot:0.16, gruen:0.20, dauer: 950},   // 2
+  {rot:0.13, gruen:0.26, dauer:1020},   // 3
+  {rot:0.10, gruen:0.32, dauer:1100},   // 4
+  {rot:0.08, gruen:0.40, dauer:1180},   // 5
+  {rot:0.06, gruen:0.48, dauer:1260}    // 6 — die Legende
+];
+function kraftStufe(koennen){
+  return KRAFT_STUFEN[Math.max(1, Math.min(6, koennen||4))];
+}
+
 let kraftAktiv = false, kraftFertig = null, kraftT0 = 0, kraftRAF = null;
+/* Zonen und Tempo des laufenden Balkens */
+let kraftRot = 0.10, kraftGruen = 0.32, kraftDauer = 1100;
 
 function kraftBewertung(wert){
-  if(wert < KRAFT_ROT || wert > 1-KRAFT_ROT) return "rot";
-  if(wert < KRAFT_ROT+KRAFT_GELB || wert > 1-KRAFT_ROT-KRAFT_GELB) return "gelb";
+  const gelbEnde = kraftRot + (1 - 2*kraftRot - kraftGruen) / 2;
+  if(wert < kraftRot || wert > 1-kraftRot) return "rot";
+  if(wert < gelbEnde || wert > 1-gelbEnde) return "gelb";
   return "gruen";
 }
 
-function kraftStarten(fertig){
+/* Die farbigen Felder an die Stufe anpassen (rot, gelb, grün, gelb, rot) */
+function kraftSkalaZeichnen(){
+  const gelb = (1 - 2*kraftRot - kraftGruen) / 2;
+  const felder = document.querySelectorAll("#kraft .kraft-feld");
+  const breiten = [kraftRot, gelb, kraftGruen, gelb, kraftRot];
+  felder.forEach((el,i)=>{
+    if(breiten[i]!=null) el.style.flexBasis = (breiten[i]*100).toFixed(2)+"%";
+  });
+}
+
+function kraftStarten(fertig, koennen){
   const box=$("kraft"), marke=$("kraftMarke");
+  const stufe=kraftStufe(koennen);
+  kraftRot=stufe.rot; kraftGruen=stufe.gruen; kraftDauer=stufe.dauer;
+  kraftSkalaZeichnen();
   kraftAktiv=true; kraftFertig=fertig; kraftT0=performance.now();
   $("kraftTitel").textContent="Jetzt tippen!";
   $("kraftTitel").className="kraft-titel";
@@ -234,7 +263,7 @@ function kraftStarten(fertig){
 
   function schritt(now){
     if(!kraftAktiv) return;
-    const t=(now-kraftT0)/KRAFT_DAUER;
+    const t=(now-kraftT0)/kraftDauer;
     /* Dreieckswelle: 0 → 1 → 0 → … */
     const wert=Math.abs(((t % 2) + 2) % 2 - 1);
     marke.style.left=(wert*100).toFixed(2)+"%";
@@ -249,7 +278,7 @@ function kraftStop(){
   if(!kraftAktiv) return;
   kraftAktiv=false;
   if(kraftRAF) cancelAnimationFrame(kraftRAF);
-  const t=(performance.now()-kraftT0)/KRAFT_DAUER;
+  const t=(performance.now()-kraftT0)/kraftDauer;
   const wert=Math.abs(((t % 2) + 2) % 2 - 1);
   const art=kraftBewertung(wert);
   const titel=$("kraftTitel");
