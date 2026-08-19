@@ -732,6 +732,25 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   to{filter:hue-rotate(-12deg) saturate(1.3)}
 }
 
+/* ---------- Geld ---------- */
+.geld-plus{
+  display:inline-block;margin-left:6px;
+  font-family:"Bebas Neue",sans-serif;font-size:20px;letter-spacing:.05em;
+  color:var(--gruen);
+}
+.geld-kasse{
+  display:inline-block;margin-left:8px;
+  font-size:13.5px;color:var(--kreide-dim);
+}
+.vit-kasse{
+  font-family:"Bebas Neue",sans-serif;font-size:34px;letter-spacing:.04em;
+  color:var(--gold);line-height:1.05;
+}
+.vit-kasse small{
+  display:block;font-family:"Archivo Narrow",sans-serif;
+  font-size:13px;letter-spacing:0;color:var(--kreide-dim);margin-top:2px;
+}
+
 /* ---------- Sicherung: Export und Import der Profile ---------- */
 .sicher-box{margin-top:16px;border-top:1px solid rgba(242,245,239,.12);padding-top:10px}
 .sicher-inhalt{margin-top:8px}

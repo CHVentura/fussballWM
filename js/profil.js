@@ -29,6 +29,22 @@ function abzeichenInfo(id){
   return null;
 }
 
+/* ---------------- Geld ----------------
+   In der Geldmeisterschaft gibt es Preisgeld: für die Teilnahme, für
+   jede erreichte Runde und für den Titel. Damit werden später die besten
+   Schützen eines Landes freigeschaltet. Startguthaben, damit man nicht
+   bei Null anfangen muss. */
+const START_GELD = 500;
+/* Preisgeld pro erreichte Runde (Index = Runde) und für den Titel */
+const PREISGELD = [100, 250, 500, 900];
+const PREISGELD_TITEL = 2000;
+
+/* Zahl mit Tausendertrennzeichen, wie im Projekt üblich: 1'000 */
+function geldFormat(n){
+  const z = Math.max(0, Math.floor(n||0));
+  return String(z).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+}
+
 /* Alle Profile. aktiv = Name des gewählten Profils. */
 let profile = {aktiv:null, liste:[]};
 
@@ -40,7 +56,9 @@ function neuesProfilObjekt(name, modus){
     abzeichen: {},          // id -> Zeitpunkt
     pokale: [],             // {team, gegner, datum}
     turnier: null,
-    challenge: null
+    challenge: null,
+    geld: START_GELD,       // Preisgeld aus Turnieren
+    kader: {}               // Land -> [freigeschaltete Kaderplätze]
   };
 }
 
@@ -58,6 +76,10 @@ function profileLaden(){
           if(!pr.stats.laender) pr.stats.laender=[];
           if(!pr.abzeichen) pr.abzeichen={};
           if(!pr.pokale) pr.pokale=[];
+          /* Profile aus der Fassung vor dem Preisgeld bekommen das
+             Startguthaben, damit sie nicht schlechter dastehen */
+          if(typeof pr.geld !== "number" || !isFinite(pr.geld)) pr.geld = START_GELD;
+          if(!pr.kader || typeof pr.kader !== "object") pr.kader = {};
         });
         return;
       }
@@ -137,6 +159,43 @@ function statPlus(feld, wieviel){
   if(!p) return;
   p.stats[feld] = (p.stats[feld]||0) + (wieviel==null ? 1 : wieviel);
 }
+/* Preisgeld gutschreiben. Rückgabe: der neue Kontostand. */
+function geldPlus(betrag){
+  const p = aktivProfil();
+  if(!p) return 0;
+  p.geld = Math.max(0, Math.floor((p.geld||0) + betrag));
+  profileSpeichern();
+  return p.geld;
+}
+/* Preisgeld einem bestimmten Profil gutschreiben — im Turnier zu zweit
+   verdienen beide Kinder, egal wer gerade am Gerät ist. */
+function geldPlusFuer(profilName, betrag){
+  const p = profile.liste.filter(x=>x.name===profilName)[0];
+  if(!p) return 0;
+  p.geld = Math.max(0, Math.floor((p.geld||0) + betrag));
+  profileSpeichern();
+  return p.geld;
+}
+function geldKontoVon(profilName){
+  const p = profile.liste.filter(x=>x.name===profilName)[0];
+  return p ? Math.max(0, Math.floor(p.geld||0)) : 0;
+}
+
+function geldKonto(){
+  const p = aktivProfil();
+  return p ? Math.max(0, Math.floor(p.geld||0)) : 0;
+}
+/* Genug Geld für einen Kauf? */
+function geldReicht(preis){ return geldKonto() >= preis; }
+/* Abbuchen; false, wenn es nicht reicht */
+function geldAbbuchen(preis){
+  const p = aktivProfil();
+  if(!p || p.geld < preis) return false;
+  p.geld = Math.floor(p.geld - preis);
+  profileSpeichern();
+  return true;
+}
+
 function statBesteSerie(serie){
   const p = aktivProfil();
   if(p && serie > (p.stats.serieBest||0)) p.stats.serieBest = serie;
@@ -321,6 +380,11 @@ function vitrineHTML(){
 
   return `
     <div class="vit-block">
+      <div class="vit-tit">Kasse</div>
+      <div class="vit-kasse">💰 ${geldFormat(p.geld)}
+        <small>Preisgeld aus der Geldmeisterschaft</small></div>
+    </div>
+    <div class="vit-block">
       <div class="vit-tit">Pokale (${p.pokale.length})</div>
       <div class="vit-pokale">${pokale}</div>
     </div>
@@ -407,6 +471,21 @@ function profilSaeubern(rohr){
     sauber.pokale = rohr.pokale
       .filter(k=>k && typeof k.team === "number" && k.team>=0 && k.team<TEAMS.length)
       .map(k=>({team:k.team, gegner:(typeof k.gegner==="number"?k.gegner:null), datum:k.datum||Date.now()}));
+  }
+  if(typeof rohr.geld === "number" && isFinite(rohr.geld) && rohr.geld >= 0){
+    sauber.geld = Math.min(9999999, Math.floor(rohr.geld));
+  }
+  /* Freigeschaltete Kaderplätze: nur gültige Länder und Plätze */
+  if(rohr.kader && typeof rohr.kader === "object"){
+    Object.keys(rohr.kader).forEach(k=>{
+      const land = parseInt(k, 10);
+      if(!(land >= 0 && land < TEAMS.length)) return;
+      const plaetze = rohr.kader[k];
+      if(!Array.isArray(plaetze)) return;
+      sauber.kader[land] = plaetze
+        .filter(x=>typeof x==="number" && x>=0 && x<KADER_GROESSE)
+        .filter((x,i,a)=>a.indexOf(x)===i);
+    });
   }
   /* Turnier und Tages-Aufgabe unverändert übernehmen, wenn sie plausibel
      aussehen — sonst weglassen, das kostet nur die laufende Partie. */

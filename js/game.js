@@ -130,14 +130,16 @@ $("startBtn").onclick=()=>{
     if(selIdxA==null || selIdxB==null){ alert("Bitte zwei Länder wählen."); return; }
     initAudio();
     wm2Neu(profile.aktiv, selIdxA, sp2Profil, selIdxB);
-    wm2BaumZeigen("Ausgelost — ihr seid beide dabei!");
+    const start=wm2PreisgeldRunde(0);   // Teilnahme für beide
+    wm2BaumZeigen(`Ausgelost — ihr seid beide dabei! ${start}`);
     return;
   }
   if(mode==="wm"){
     if(selIdxA==null){ alert("Bitte dein Team wählen."); return; }
     initAudio();
     wmNeu(selIdxA);
-    wmBaumZeigen("Die Auslosung ist gemacht — 16 Teams, du bist dabei!");
+    const start=preisgeldFuerRunde(0);   // Teilnahme am Achtelfinal
+    wmBaumZeigen(`Die Auslosung ist gemacht — 16 Teams, du bist dabei! ${geldHinweis(start)}`);
     return;
   }
   if(selIdxA==null || selIdxB==null){
@@ -227,7 +229,8 @@ function nachProfilwahl(){
 function profilKopfZeigen(){
   const p=aktivProfil();
   if(!p) return;
-  $("profWer").innerHTML=`${p.name}<small>🏆 ${p.pokale.length} Pokale · 🏅 ${abzeichenAnzahl()} Abzeichen</small>`;
+  $("profWer").innerHTML=`${p.name}<small>🏆 ${p.pokale.length} Pokale · 🏅 ${abzeichenAnzahl()} Abzeichen`+
+    ` · 💰 ${geldFormat(geldKonto())}</small>`;
   $("modusBtn").textContent = p.modus==="profi" ? "Modus: Profi" : "Modus: Anfänger";
   $("challBox").innerHTML=challengeHTML();
 }
@@ -1064,6 +1067,28 @@ function wmPartieStarten(){
   startGame();
 }
 
+/* ---------------- Preisgeld ----------------
+   Ausgezahlt wird beim Erreichen einer Runde, damit man den Gewinn sofort
+   sieht. Jede Runde nur einmal — dafür merkt sich das Turnier, was schon
+   ausgezahlt wurde (gezahlt). */
+function preisgeldFuerRunde(r){
+  if(!turnier) return 0;
+  if(!Array.isArray(turnier.gezahlt)) turnier.gezahlt=[];
+  if(turnier.gezahlt.indexOf(r) >= 0) return 0;
+  const betrag = PREISGELD[r] || 0;
+  if(!betrag) return 0;
+  turnier.gezahlt.push(r);
+  geldPlus(betrag);
+  wmSpeichern();
+  return betrag;
+}
+/* Text für den Turnierbaum: "+250 — Kasse: 850" */
+function geldHinweis(betrag){
+  if(!betrag) return "";
+  return `<span class="geld-plus">+${geldFormat(betrag)}</span>
+          <span class="geld-kasse">Kasse: ${geldFormat(geldKonto())}</span>`;
+}
+
 /* ---------------- Nach meiner gewonnenen Partie ---------------- */
 function wmNachPartie(){
   wmAndereSimulieren();          // die übrigen Partien der Runde
@@ -1071,7 +1096,8 @@ function wmNachPartie(){
   if(turnier.runde < WM_RUNDEN.length-1){
     wmNaechsteRunde();
     const g=wmGegner();
-    wmBaumZeigen(`Weiter! Im ${wmRundenName(turnier.runde)} wartet ${TEAMS[g]}.`);
+    const gewinn=preisgeldFuerRunde(turnier.runde);
+    wmBaumZeigen(`Weiter! Im ${wmRundenName(turnier.runde)} wartet ${TEAMS[g]}. ${geldHinweis(gewinn)}`);
   } else {
     turnier.status="titel";
     /* Pokal in die Vitrine — einmal pro Turnier */
@@ -1081,6 +1107,7 @@ function wmNachPartie(){
       const finalGegner = weg.length ? weg[weg.length-1].gegner : null;
       pokalEintragen(turnier.meinIdx, finalGegner);
       challengePruefen("titel");
+      geldPlus(PREISGELD_TITEL);      // Titelprämie
     }
     wmSpeichern();
     pokalZeigen();
@@ -1267,6 +1294,26 @@ function wm2ResultatBuchen(side){
 }
 
 /* Nach einer Partie: nächste Menschen-Partie, sonst Runde abschliessen */
+/* Preisgeld im Turnier zu zweit: jeder, der die Runde erreicht hat,
+   bekommt sie gutgeschrieben — auch der, der gerade nicht am Gerät ist. */
+function wm2PreisgeldRunde(r){
+  if(!turnier2) return "";
+  if(!Array.isArray(turnier2.gezahlt)) turnier2.gezahlt=[];
+  const betrag = PREISGELD[r] || 0;
+  const teile = [];
+  [0,1].forEach(nr=>{
+    const marke = r+":"+nr;
+    if(turnier2.gezahlt.indexOf(marke) >= 0) return;
+    if(turnier2.ausRunde[nr]!=null && turnier2.ausRunde[nr] < r) return;  // vorher raus
+    if(!betrag) return;
+    turnier2.gezahlt.push(marke);
+    geldPlusFuer(wm2Name(nr), betrag);
+    teile.push(`${wm2Name(nr)} +${geldFormat(betrag)}`);
+  });
+  wm2Speichern();
+  return teile.length ? `<span class="geld-plus">${teile.join(" · ")}</span>` : "";
+}
+
 function wm2NachPartie(){
   wm2GegenMensch=false;
   const offen=wm2NaechstePartie();
@@ -1288,7 +1335,8 @@ function wm2NachPartie(){
     wm2BaumZeigen();
     return;
   }
-  wm2BaumZeigen(`${WM_RUNDEN[turnier2.runde].name}! ${wm2StandText()}`);
+  const gewinn=wm2PreisgeldRunde(turnier2.runde);
+  wm2BaumZeigen(`${WM_RUNDEN[turnier2.runde].name}! ${wm2StandText()} ${gewinn}`);
 }
 
 /* Pokal und Abzeichen dem richtigen Profil gutschreiben */
@@ -1300,6 +1348,7 @@ function wm2TitelBuchen(nr){
   const weg=wm2Weg(nr);
   pokalEintragen(wm2Spieler(nr).idx, weg.length ? weg[weg.length-1].gegner : null);
   challengePruefen("titel");
+  geldPlus(PREISGELD_TITEL);          // Titelprämie für den Sieger
   profilWaehlen(vorher || turnier2.chef);
   wm2Speichern();
 }
