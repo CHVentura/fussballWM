@@ -45,7 +45,8 @@ function imTurnier(){ return mode==="wm" || mode==="wm2"; }
 /* ====================== DOM ====================== */
 const scr = {
   profil:$("scr-profil"), setup:$("scr-setup"), game:$("scr-game"), win:$("scr-win"),
-  wm:$("scr-wm"), pokal:$("scr-pokal"), aus:$("scr-aus"), vitrine:$("scr-vitrine")
+  wm:$("scr-wm"), pokal:$("scr-pokal"), aus:$("scr-aus"), vitrine:$("scr-vitrine"),
+  markt:$("scr-markt")
 };
 
 /* Setup: ein Flaggen-Raster, alle Länder auf einen Blick */
@@ -76,6 +77,17 @@ function refreshGrid(){
     const txt = istA ? (mode==="2p"?"1":"DU") : istB ? (mode==="1p"?"PC":"2") : "";
     b.textContent=txt;
     b.style.display = txt ? "flex" : "none";
+    /* Untertitel: wer schiesst für mich als Erster? Ist der Star des
+       Landes noch gesperrt, steht ein Schloss dabei. */
+    const klein=card.querySelector("small");
+    if(klein && aktivProfil()){
+      const erster=kaderVerfuegbar(i, kaderFrei(i))[0];
+      const starDa=platzGekauft(i, 0);
+      klein.innerHTML = erster
+        ? (erster.legende ? "⭐ "+erster.p : erster.p) +
+          (starDa ? "" : ` <span class="schloss">🔒${stern(i).p}</span>`)
+        : stern(i).p;
+    }
   });
 }
 refreshGrid();
@@ -336,6 +348,115 @@ function vitrineZeigen(){
   show("vitrine");
 }
 
+/* ====================================================================
+   Transfermarkt: die drei besten Schützen eines Landes freischalten
+   ==================================================================== */
+let marktLand = 0;
+
+$("marktBtn").onclick=()=>{ marktLand = (selIdxA!=null ? selIdxA : 0); marktZeigen(); };
+$("marktZurueckBtn").onclick=()=>show("setup");
+
+function marktMeldung(text, gut){
+  const m=$("marktMeldung");
+  m.textContent=text||"";
+  m.className="markt-meldung"+(text ? (gut ? " gut" : " schlecht") : "");
+}
+
+function marktZeigen(){
+  const p=aktivProfil();
+  if(!p) return;
+  const nL=legendenAnzahl(), nS=kaderAnzahlFrei();
+  $("marktUnter").innerHTML=
+    `<span class="markt-kasse">💰 ${geldFormat(geldKonto())}</span> · `+
+    `${nS} ${nS===1?"Spieler":"Spieler"} freigeschaltet · `+
+    `${nL} ${nL===1?"Legende":"Legenden"}`;
+  marktGridZeichnen();
+  marktListeZeichnen();
+  show("markt");
+}
+
+/* Länderraster: zeigt, wie viele der drei besten schon da sind */
+function marktGridZeichnen(){
+  $("marktGrid").innerHTML=TEAMS.map((n,i)=>{
+    const frei=kaderFrei(i).length;
+    const marke=legendeFrei(i) ? "⭐ komplett" : (frei ? frei+" von 3" : "");
+    return `<div class="flag-card${i===marktLand?" selA":""}" data-land="${i}">
+      ${flagHTML(i,14)}<span>${n}<small>${marke||"noch keiner"}</small></span>
+      <span class="badge"${i===marktLand?' style="display:flex"':""}>${i===marktLand?"✓":""}</span>
+    </div>`;
+  }).join("");
+  [...$("marktGrid").querySelectorAll(".flag-card")].forEach(k=>{
+    k.onclick=()=>{
+      marktLand=parseInt(k.getAttribute("data-land"),10);
+      marktMeldung("");
+      marktGridZeichnen();
+      marktListeZeichnen();
+    };
+  });
+}
+
+/* Die kaufbaren Spieler des gewählten Landes, dazu die Legende */
+function marktListeZeichnen(){
+  const voll=kaderVoll(marktLand);
+  const rollen=["Bester Schütze","Zweiter Schütze","Dritter Schütze"];
+  let html="";
+
+  GESPERRTE_PLAETZE.forEach((platz,n)=>{
+    const sp=voll[platz];
+    const hat=platzGekauft(marktLand, platz);
+    const preis=platzPreis(platz);
+    const reicht=geldReicht(preis);
+    html+=`<div class="markt-karte${hat?" hat":" gesperrt"}">
+      <div class="markt-info">
+        <div class="markt-name">${hat?"":"🔒 "}${sp.p}
+          <span class="markt-sterne">${sterne(sp.koennen)}</span></div>
+        <span class="markt-rolle">${rollen[n]} · Nummer ${sp.num}</span>
+      </div>
+      ${hat
+        ? `<span class="markt-hat-txt">✓ im Kader</span>`
+        : `<span class="markt-preis">${geldFormat(preis)}</span>
+           <button class="markt-kauf" type="button" data-platz="${platz}"
+             ${reicht?"":"disabled"}>${reicht?"Kaufen":"zu teuer"}</button>`}
+    </div>`;
+  });
+
+  /* Die Legende: kein Kauf, sondern Belohnung für alle drei */
+  const leg=legendeVon(marktLand);
+  if(leg){
+    const da=legendeFrei(marktLand);
+    const fehlen=GESPERRTE_PLAETZE.filter(pl=>!platzGekauft(marktLand,pl)).length;
+    html+=`<div class="markt-karte legende${da?" hat":""}">
+      <div class="markt-info">
+        <div class="markt-name">${da?"⭐ ":"🔒 "}${leg.p}
+          <span class="markt-sterne">${sterne(leg.koennen)}</span></div>
+        <span class="markt-rolle">Legende · Nummer ${leg.num}${da?" · schiesst als Erster":""}</span>
+      </div>
+      <span class="markt-hat-txt">${da ? "✓ im Kader"
+        : `noch ${fehlen} ${fehlen===1?"Spieler":"Spieler"}`}</span>
+    </div>`;
+  }
+
+  $("marktListe").innerHTML=html;
+  [...$("marktListe").querySelectorAll(".markt-kauf")].forEach(b=>{
+    b.onclick=()=>{
+      const platz=parseInt(b.getAttribute("data-platz"),10);
+      const erg=spielerKaufen(marktLand, platz);
+      if(erg.fehler){ marktMeldung(erg.fehler, false); return; }
+      const sp=kaderVoll(marktLand)[platz];
+      if(erg.legende){
+        const leg=legendeVon(marktLand);
+        marktMeldung(`${sp.p} ist dabei — und ${leg.p} kommt als Legende dazu!`, true);
+        fanfare();
+      } else {
+        marktMeldung(`${sp.p} spielt jetzt für dich.`, true);
+        segTone(2);
+      }
+      marktZeigen();
+      refreshGrid();
+    };
+  });
+}
+
 /* ====================== Tor-SVG aufbauen ====================== */
 const zonesG=$("zones");
 const zoneEls=[];
@@ -366,6 +487,13 @@ const zoneEls=[];
 function startGame(){
   kicksA=[]; kicksB=[]; shootIsA=true; sudden=false;
   schuetzeNr={A:0, B:0};
+  /* Seite A gehört immer dem Profil, das gerade spielt. Seite B nur im
+     Duell zweier Kinder im Turnier zu zweit. */
+  seiteProfil = {A: profile.aktiv, B: null};
+  if(mode==="wm2" && wm2GegenMensch && turnier2){
+    const anderer = (wm2Akt===0) ? 1 : 0;
+    seiteProfil = {A: wm2Name(wm2Akt), B: wm2Name(anderer)};
+  }
   letzterTreffer={A:null, B:null};
   serie={A:0, B:0};
   paradenPartie=0;
@@ -382,13 +510,29 @@ function startGame(){
 
 function curShooter(){ return shootIsA?teamA:teamB; }
 function curKeeperTeam(){ return shootIsA?teamB:teamA; }
-function shooterPlayer(){
-  const nr = (shootIsA ? schuetzeNr.A : schuetzeNr.B) % KADER_GROESSE;
-  return kaderVoll(curShooter().idx)[nr];
+/* ---------- Welcher Kader tritt an? ----------
+   Ein Team, das einem Profil gehört, spielt nur mit den freigeschalteten
+   Schützen. Der Computer und der namenlose Gegner im Zweispieler-Modus
+   treten immer mit dem vollen Kader an — sonst wären sie geschwächt.
+   seiteProfil wird in startGame gesetzt. */
+let seiteProfil = {A:null, B:null};
+
+function kaderVonSeite(seite){
+  const idx = (seite==="A") ? teamA.idx : teamB.idx;
+  const name = seiteProfil[seite];
+  if(!name) return kaderVoll(idx);
+  return kaderVerfuegbar(idx, kaderFreiVon(name, idx));
 }
-/* Wievielter Schütze des Teams ist gerade dran (1 … 11) */
+function shooterPlayer(){
+  const seite = shootIsA ? "A" : "B";
+  const liste = kaderVonSeite(seite);
+  const nr = (shootIsA ? schuetzeNr.A : schuetzeNr.B) % liste.length;
+  return liste[nr];
+}
+/* Wievielter Schütze des Teams ist gerade dran */
 function schuetzePos(){
-  return ((shootIsA ? schuetzeNr.A : schuetzeNr.B) % KADER_GROESSE) + 1;
+  const liste = kaderVonSeite(shootIsA ? "A" : "B");
+  return ((shootIsA ? schuetzeNr.A : schuetzeNr.B) % liste.length) + 1;
 }
 function score(arr){ return arr.filter(Boolean).length; }
 

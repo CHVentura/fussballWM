@@ -16,11 +16,30 @@ eigenes Profil an. Warum? Weil dann jedem seine eigenen Sachen gehören:
 
 - eigene **Pokale** und **Abzeichen** in der Vitrine
 - eigene **Statistik** (Tore, Trefferquote, Paraden, beste Serie)
+- eine eigene **Kasse** mit dem Preisgeld
+- eigene **freigeschaltete Schützen** im Transfermarkt
 - ein eigenes **Turnier**, das ihr getrennt weiterspielen könnt
 - eine eigene **Aufgabe von heute**
 
 Oben im Menü steht, wer gerade spielt. Mit **Profil wechseln** gibst du das
-Tablet weiter, mit **🏆 Vitrine** schaust du dir deine Sammlung an.
+Tablet weiter, mit **🏆 Vitrine** schaust du dir deine Sammlung an und mit
+**🛒 Transfermarkt** kaufst du neue Schützen.
+
+### Sicherung — damit nichts verloren geht
+
+Alles liegt nur in dem Browser, in dem du spielst. Löscht jemand die
+Website-Daten, sind Pokale, Abzeichen und Geld weg. Darum gibt es unten im
+Profil-Bildschirm **🗂 Sicherung**:
+
+- **Sicherung erstellen** → **Text kopieren** und in eine Notiz oder eine
+  Mail an dich selber einfügen. (Es geht auch als Datei, aber der Text ist
+  auf dem Tablet einfacher.)
+- **Sicherung einlesen** → denselben Text einfügen, fertig. Das geht auch
+  auf einem anderen Gerät.
+
+Bestehende Profile bleiben beim Einlesen immer erhalten: Gibt es einen
+Namen schon, kommt das eingelesene Profil als **Name (2)** dazu. Mit dem
+🗑-Knopf auf einer Profilkarte löschst du ein Profil.
 
 ### Anfänger oder Profi?
 
@@ -38,6 +57,15 @@ Menü über den Knopf **Modus**:
   - **Rot** = verrissen. Der Ball geht neben oder über das Tor — da hilft
     auch der beste Torwart nichts.
 
+  **Wichtig:** Jeder Schütze hat **Sterne** (★). Ein guter Schütze mit fünf
+  Sternen hat ein grosses grünes Feld und einen langsamen Balken — bei ihm
+  ist es leicht. Ein Ersatzspieler mit zwei Sternen hat ein kleines grünes
+  Feld und einen schnellen Balken. Darum lohnt es sich, im Transfermarkt
+  gute Schützen freizuschalten.
+
+  Im **Anfänger-Modus** spielen die Sterne keine Rolle — dort ist jeder
+  Schuss gleich fair.
+
 ## Abzeichen sammeln
 
 In der Vitrine warten **10 Abzeichen**. Du musst sie nicht kaufen, du
@@ -52,7 +80,7 @@ entdeckst sie beim Spielen:
 | 💀 | Nervenstark | Im Sudden Death gewinnen |
 | ✨ | Makellos | Eine Partie ohne Fehlschuss gewinnen |
 | 🌍 | Weltenbummler | Mit 5 verschiedenen Ländern spielen |
-| 👑 | Legende | Titel mit einem Aussenseiter |
+| 👑 | Aussenseiter | Titel mit einem Aussenseiter |
 | 🏅 | Sammler | 3 Titel in der Vitrine |
 | ⭐ | Tages-Held | Eine Aufgabe von heute erfüllen |
 
@@ -63,6 +91,43 @@ bekommt eine andere. Morgen gibt es wieder eine neue.
 **Trefferserie:** Trifft du mehrmals hintereinander, wird es laut. Ab dem
 dritten Tor **brennt der Ball** und die Trommeln im Stadion werden immer
 schneller. Ein Fehlschuss — und die Serie ist weg.
+
+## Geld verdienen und Schützen kaufen 💰
+
+In der **Geldmeisterschaft** gibt es Preisgeld — je weiter du kommst, desto
+mehr:
+
+| Wofür | Preisgeld |
+|---|---|
+| Mitspielen (Achtelfinal) | 100 |
+| Viertelfinal erreicht | 250 |
+| Halbfinal erreicht | 500 |
+| Final erreicht | 900 |
+| **Turnier gewonnen** | **2'000** |
+
+Wer ein Turnier ganz durchspielt und gewinnt, verdient also **3'750**. Zum
+Start hast du **500** in der Kasse. Im Turnier zu zweit verdienen beide
+Kinder — auch wer gerade nicht am Gerät ist.
+
+### Der Transfermarkt 🛒
+
+Die **drei besten Schützen** jedes Landes sind am Anfang gesperrt (🔒). Die
+anderen acht spielen immer. Im Transfermarkt kaufst du die Guten frei:
+
+| Wer | Preis |
+|---|---|
+| Dritter Schütze (★★★★) | 400 |
+| Zweiter Schütze (★★★★★) | 800 |
+| Bester Schütze (★★★★★) | 1'200 |
+
+**Und wenn du alle drei hast?** Dann kommt die **Legende** des Landes dazu —
+gratis, als Belohnung. Das sind die grossen Namen von früher: bei der Schweiz
+Stéphane Chapuisat, bei Argentinien Diego Maradona, bei Brasilien Ronaldinho.
+Die Legende hat **sechs Sterne** — mehr als jeder andere — und schiesst
+immer als Erste.
+
+Du kaufst pro Land. Spielst du am liebsten mit der Schweiz, dann schalte dort
+alle drei frei — dann hast du deine Legende.
 
 ## So wird gespielt
 
@@ -151,10 +216,12 @@ nicht da. Das gilt auch für Profile, Pokale und Abzeichen.
 
 ## Kleine Extras
 
-- Jedes Land hat einen **Kader mit 11 Schützen**. Sie kommen der Reihe nach dran
-  — genau wie im echten Fussball darf keiner zweimal schiessen, solange nicht
-  alle einmal angetreten sind. Die ersten fünf sind bekannte Nationalspieler,
-  die weiteren treten mit ihrer Rückennummer an.
+- Jedes Land hat einen **Kader mit 11 Schützen** (mit Legende 12). Sie kommen
+  der Reihe nach dran — genau wie im echten Fussball darf keiner zweimal
+  schiessen, solange nicht alle einmal angetreten sind. Die ersten fünf sind
+  bekannte Nationalspieler, die weiteren treten mit ihrer Rückennummer an.
+- Auf der Länderkarte im Menü steht, **wer für dich als Erster schiesst** —
+  und mit 🔒, wer noch gesperrt ist.
 - Auf dem Sieger-Bild jubelt der Spieler, der den letzten Treffer erzielt hat.
 - Die Zuschauer tragen die Farben der zwei Mannschaften — und alle paar
   Sekunden läuft eine **La-Ola** durch das Stadion.

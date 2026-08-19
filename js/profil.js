@@ -20,7 +20,10 @@ const ABZEICHEN = [
   {id:"nervenstark",   e:"💀", name:"Nervenstark",   txt:"Im Sudden Death gewonnen"},
   {id:"makellos",      e:"✨", name:"Makellos",      txt:"Eine Partie ohne Fehlschuss gewonnen"},
   {id:"weltenbummler", e:"🌍", name:"Weltenbummler", txt:"Mit 5 verschiedenen Ländern gespielt"},
-  {id:"legende",       e:"👑", name:"Legende",       txt:"Titel mit einem Aussenseiter"},
+  /* id bleibt "legende", damit bestehende Profile das Abzeichen behalten —
+     angezeigt wird "Aussenseiter", sonst verwechselt man es mit den
+     Spieler-Legenden aus dem Transfermarkt. */
+  {id:"legende",       e:"👑", name:"Aussenseiter",  txt:"Titel mit einem Aussenseiter"},
   {id:"sammler",       e:"🏅", name:"Sammler",       txt:"3 Titel in der Vitrine"},
   {id:"tagesheld",     e:"⭐", name:"Tages-Held",    txt:"Eine Tages-Aufgabe erfüllt"}
 ];
@@ -194,6 +197,63 @@ function geldAbbuchen(preis){
   p.geld = Math.floor(p.geld - preis);
   profileSpeichern();
   return true;
+}
+
+/* ---------------- Kader freischalten ----------------
+   Pro Land merkt sich das Profil, welche der drei gesperrten Plätze
+   gekauft sind: kader = { "0": [2, 1], ... } */
+function kaderFrei(land){
+  const p = aktivProfil();
+  if(!p || !p.kader) return [];
+  const l = p.kader[land];
+  return Array.isArray(l) ? l : [];
+}
+function kaderFreiVon(profilName, land){
+  const p = profile.liste.filter(x=>x.name===profilName)[0];
+  if(!p || !p.kader) return [];
+  const l = p.kader[land];
+  return Array.isArray(l) ? l : [];
+}
+function platzGekauft(land, platz){ return kaderFrei(land).indexOf(platz) >= 0; }
+
+/* Hat dieses Profil alle drei besten eines Landes — und damit die Legende? */
+function legendeFrei(land){
+  const frei = kaderFrei(land);
+  return GESPERRTE_PLAETZE.every(pl=>frei.indexOf(pl) >= 0);
+}
+
+/* Spieler kaufen. Rückgabe: {ok:true, legende:bool} oder {fehler:"..."} */
+function spielerKaufen(land, platz){
+  const p = aktivProfil();
+  if(!p) return {fehler:"Kein Profil gewählt."};
+  if(!platzGesperrt(platz)) return {fehler:"Dieser Spieler ist immer dabei."};
+  if(platzGekauft(land, platz)) return {fehler:"Den hast du schon."};
+  const preis = platzPreis(platz);
+  if(!geldAbbuchen(preis)){
+    return {fehler:`Dafür fehlen noch ${geldFormat(preis-geldKonto())}. Spiel ein Turnier!`};
+  }
+  if(!p.kader) p.kader = {};
+  if(!Array.isArray(p.kader[land])) p.kader[land] = [];
+  p.kader[land].push(platz);
+  const legendeNeu = legendeFrei(land);
+  profileSpeichern();
+  return {ok:true, legende:legendeNeu};
+}
+
+/* Wie viele Spieler hat dieses Profil insgesamt freigeschaltet? */
+function kaderAnzahlFrei(){
+  const p = aktivProfil();
+  if(!p || !p.kader) return 0;
+  return Object.keys(p.kader).reduce((n,k)=>n + (p.kader[k]||[]).length, 0);
+}
+/* Bei wie vielen Ländern ist die Legende freigespielt? */
+function legendenAnzahl(){
+  const p = aktivProfil();
+  if(!p || !p.kader) return 0;
+  return Object.keys(p.kader).filter(k=>{
+    const frei = p.kader[k]||[];
+    return GESPERRTE_PLAETZE.every(pl=>frei.indexOf(pl) >= 0);
+  }).length;
 }
 
 function statBesteSerie(serie){
@@ -420,6 +480,9 @@ function datumKurz(ms){
    ==================================================================== */
 const SICHERUNG_MARKE = "elfmeterschiessen-profile";
 const SICHERUNG_FASSUNG = 1;
+/* Obergrenze für eingelesene Zählerstände: schützt die Anzeige vor
+   absurden Werten wie 1e99 aus einer bearbeiteten Sicherung. */
+const STAT_MAX = 999999;
 
 /* Alle Profile als lesbarer Text (JSON) */
 function sicherungText(){
@@ -455,11 +518,12 @@ function profilSaeubern(rohr){
           ? w.filter(x=>typeof x==="number" && x>=0 && x<TEAMS.length)
           : [];
       } else if(typeof w === "number" && isFinite(w) && w>=0){
-        sauber.stats[k] = Math.floor(w);
+        sauber.stats[k] = Math.min(STAT_MAX, Math.floor(w));
       }
     });
-    if(typeof rohr.stats.challenges === "number" && rohr.stats.challenges>=0){
-      sauber.stats.challenges = Math.floor(rohr.stats.challenges);
+    if(typeof rohr.stats.challenges === "number" && isFinite(rohr.stats.challenges)
+       && rohr.stats.challenges>=0){
+      sauber.stats.challenges = Math.min(STAT_MAX, Math.floor(rohr.stats.challenges));
     }
   }
   if(rohr.abzeichen && typeof rohr.abzeichen === "object"){

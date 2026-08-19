@@ -234,6 +234,81 @@ const KADER = [
 /* Das Gesicht eines Landes: der erste Schütze */
 function stern(i){ return KADER[i][0]; }
 
+/* ---------- Die Legende jedes Landes ----------
+   Grosse Namen aus der Vergangenheit. Sie lässt sich nicht kaufen: wer
+   die drei besten Schützen eines Landes freigeschaltet hat, bekommt sie
+   geschenkt. Mit 6 Sternen ist sie besser als jeder aktuelle Spieler und
+   tritt als erste an. */
+const LEGENDEN = [
+  {p:"Stéphane Chapuisat", num:9,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"},  // Schweiz
+  {p:"Lothar Matthäus",    num:10, skin:"#f0c8a0", hair:"#caa55a", style:"short"},  // Deutschland
+  {p:"Hans Krankl",        num:9,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"},  // Österreich
+  {p:"Zinédine Zidane",    num:10, skin:"#e0a87a", hair:"#2a2118", style:"buzz"},   // Frankreich
+  {p:"Roberto Baggio",     num:10, skin:"#e8b88a", hair:"#6b4a2a", style:"bun"},    // Italien
+  {p:"Andrés Iniesta",     num:6,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"},  // Spanien
+  {p:"Luís Figo",          num:7,  skin:"#e0a87a", hair:"#2a2118", style:"short"},  // Portugal
+  {p:"David Beckham",      num:7,  skin:"#f0c8a0", hair:"#caa55a", style:"short"},  // England
+  {p:"Marco van Basten",   num:9,  skin:"#f0c8a0", hair:"#8a6a3a", style:"short"},  // Niederlande
+  {p:"Jan Ceulemans",      num:10, skin:"#f0c8a0", hair:"#8a6a3a", style:"short"},  // Belgien
+  {p:"Davor Šuker",        num:9,  skin:"#e8b88a", hair:"#3a2a1a", style:"short"},  // Kroatien
+  {p:"Michael Laudrup",    num:10, skin:"#f0c8a0", hair:"#caa55a", style:"short"},  // Dänemark
+  {p:"Ole Gunnar Solskjær",num:20, skin:"#f0c8a0", hair:"#e8d28a", style:"short"},  // Norwegen
+  {p:"Landon Donovan",     num:10, skin:"#e8b88a", hair:"#caa55a", style:"short"},  // USA
+  {p:"Dwayne De Rosario",  num:14, skin:"#7a4a30", hair:"#161310", style:"buzz"},   // Kanada
+  {p:"Hugo Sánchez",       num:9,  skin:"#c98a5b", hair:"#2a2118", style:"curly"},  // Mexiko
+  {p:"Ronaldinho",         num:10, skin:"#8d5a3b", hair:"#161310", style:"bun"},    // Brasilien
+  {p:"Diego Maradona",     num:10, skin:"#c98a5b", hair:"#161310", style:"curly"},  // Argentinien
+  {p:"Enzo Francescoli",   num:10, skin:"#e8b88a", hair:"#2a2118", style:"short"},  // Uruguay
+  {p:"Carlos Valderrama",  num:10, skin:"#c98a5b", hair:"#caa55a", style:"curly"},  // Kolumbien
+  {p:"Álex Aguinaga",      num:10, skin:"#c98a5b", hair:"#161310", style:"short"},  // Ecuador
+  {p:"Hidetoshi Nakata",   num:7,  skin:"#f0d0a8", hair:"#6b4a2a", style:"short"},  // Japan
+  {p:"Cha Bum-kun",        num:11, skin:"#f0d0a8", hair:"#1c1712", style:"short"},  // Südkorea
+  {p:"Tim Cahill",         num:4,  skin:"#e8b88a", hair:"#3a2a1a", style:"buzz"},   // Australien
+  {p:"Mustapha Hadji",     num:10, skin:"#c98a5b", hair:"#161310", style:"curly"},  // Marokko
+  {p:"El Hadji Diouf",     num:11, skin:"#5a3a22", hair:"#161310", style:"short"}   // Senegal
+];
+
+/* ---------- Freischalten ----------
+   Die drei besten Schützen eines Landes (Kaderplatz 0, 1, 2) sind am
+   Anfang gesperrt und kosten Preisgeld. Alle anderen spielen immer mit. */
+const GESPERRTE_PLAETZE = [0, 1, 2];
+const PREIS_PLATZ = [1200, 800, 400];   // Platz 0 ist der teuerste
+
+function platzGesperrt(platz){ return GESPERRTE_PLAETZE.indexOf(platz) >= 0; }
+function platzPreis(platz){ return PREIS_PLATZ[platz] || 0; }
+
+/* Die Legende eines Landes als Spieler-Objekt. Trägt ihre historische
+   Nummer — ist die im Kader belegt, weicht sie auf eine freie aus. */
+const legendeCache = [];
+function legendeVon(i){
+  if(legendeCache[i]) return legendeCache[i];
+  const roh = LEGENDEN[i];
+  if(!roh) return null;
+  const belegt = kaderVoll(i).map(s=>s.num);
+  let num = roh.num;
+  if(belegt.indexOf(num) >= 0){
+    for(let k=12; k<40; k++){ if(belegt.indexOf(k) < 0){ num=k; break; } }
+  }
+  legendeCache[i] = Object.assign({}, roh, {num:num, koennen:6, legende:true});
+  return legendeCache[i];
+}
+
+/* Der Kader, mit dem tatsächlich angetreten wird.
+   frei = Liste der freigeschalteten Kaderplätze (kann leer sein).
+   Sind alle drei gesperrten Plätze frei, führt die Legende den Kader an. */
+function kaderVerfuegbar(i, frei){
+  const offen = Array.isArray(frei) ? frei : [];
+  const liste = kaderVoll(i).filter((sp,platz)=>
+    !platzGesperrt(platz) || offen.indexOf(platz) >= 0
+  );
+  const alleDrei = GESPERRTE_PLAETZE.every(platz=>offen.indexOf(platz) >= 0);
+  if(alleDrei){
+    const leg = legendeVon(i);
+    if(leg) return [leg].concat(liste);
+  }
+  return liste;
+}
+
 /* ---------- Der ganze Kader: 11 Schützen pro Land ----------
    Nach den echten Regeln muss jeder Spieler einmal geschossen haben,
    bevor einer zum zweiten Mal antritt. Die fünf bekannten Schützen
