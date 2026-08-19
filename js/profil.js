@@ -20,13 +20,32 @@ const ABZEICHEN = [
   {id:"nervenstark",   e:"💀", name:"Nervenstark",   txt:"Im Sudden Death gewonnen"},
   {id:"makellos",      e:"✨", name:"Makellos",      txt:"Eine Partie ohne Fehlschuss gewonnen"},
   {id:"weltenbummler", e:"🌍", name:"Weltenbummler", txt:"Mit 5 verschiedenen Ländern gespielt"},
-  {id:"legende",       e:"👑", name:"Legende",       txt:"Titel mit einem Aussenseiter"},
+  /* id bleibt "legende", damit bestehende Profile das Abzeichen behalten —
+     angezeigt wird "Aussenseiter", sonst verwechselt man es mit den
+     Spieler-Legenden aus dem Transfermarkt. */
+  {id:"legende",       e:"👑", name:"Aussenseiter",  txt:"Titel mit einem Aussenseiter"},
   {id:"sammler",       e:"🏅", name:"Sammler",       txt:"3 Titel in der Vitrine"},
   {id:"tagesheld",     e:"⭐", name:"Tages-Held",    txt:"Eine Tages-Aufgabe erfüllt"}
 ];
 function abzeichenInfo(id){
   for(let i=0;i<ABZEICHEN.length;i++) if(ABZEICHEN[i].id===id) return ABZEICHEN[i];
   return null;
+}
+
+/* ---------------- Geld ----------------
+   In der Geldmeisterschaft gibt es Preisgeld: für die Teilnahme, für
+   jede erreichte Runde und für den Titel. Damit werden später die besten
+   Schützen eines Landes freigeschaltet. Startguthaben, damit man nicht
+   bei Null anfangen muss. */
+const START_GELD = 500;
+/* Preisgeld pro erreichte Runde (Index = Runde) und für den Titel */
+const PREISGELD = [100, 250, 500, 900];
+const PREISGELD_TITEL = 2000;
+
+/* Zahl mit Tausendertrennzeichen, wie im Projekt üblich: 1'000 */
+function geldFormat(n){
+  const z = Math.max(0, Math.floor(n||0));
+  return String(z).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 }
 
 /* Alle Profile. aktiv = Name des gewählten Profils. */
@@ -40,7 +59,9 @@ function neuesProfilObjekt(name, modus){
     abzeichen: {},          // id -> Zeitpunkt
     pokale: [],             // {team, gegner, datum}
     turnier: null,
-    challenge: null
+    challenge: null,
+    geld: START_GELD,       // Preisgeld aus Turnieren
+    kader: {}               // Land -> [freigeschaltete Kaderplätze]
   };
 }
 
@@ -58,6 +79,10 @@ function profileLaden(){
           if(!pr.stats.laender) pr.stats.laender=[];
           if(!pr.abzeichen) pr.abzeichen={};
           if(!pr.pokale) pr.pokale=[];
+          /* Profile aus der Fassung vor dem Preisgeld bekommen das
+             Startguthaben, damit sie nicht schlechter dastehen */
+          if(typeof pr.geld !== "number" || !isFinite(pr.geld)) pr.geld = START_GELD;
+          if(!pr.kader || typeof pr.kader !== "object") pr.kader = {};
         });
         return;
       }
@@ -137,6 +162,100 @@ function statPlus(feld, wieviel){
   if(!p) return;
   p.stats[feld] = (p.stats[feld]||0) + (wieviel==null ? 1 : wieviel);
 }
+/* Preisgeld gutschreiben. Rückgabe: der neue Kontostand. */
+function geldPlus(betrag){
+  const p = aktivProfil();
+  if(!p) return 0;
+  p.geld = Math.max(0, Math.floor((p.geld||0) + betrag));
+  profileSpeichern();
+  return p.geld;
+}
+/* Preisgeld einem bestimmten Profil gutschreiben — im Turnier zu zweit
+   verdienen beide Kinder, egal wer gerade am Gerät ist. */
+function geldPlusFuer(profilName, betrag){
+  const p = profile.liste.filter(x=>x.name===profilName)[0];
+  if(!p) return 0;
+  p.geld = Math.max(0, Math.floor((p.geld||0) + betrag));
+  profileSpeichern();
+  return p.geld;
+}
+function geldKontoVon(profilName){
+  const p = profile.liste.filter(x=>x.name===profilName)[0];
+  return p ? Math.max(0, Math.floor(p.geld||0)) : 0;
+}
+
+function geldKonto(){
+  const p = aktivProfil();
+  return p ? Math.max(0, Math.floor(p.geld||0)) : 0;
+}
+/* Genug Geld für einen Kauf? */
+function geldReicht(preis){ return geldKonto() >= preis; }
+/* Abbuchen; false, wenn es nicht reicht */
+function geldAbbuchen(preis){
+  const p = aktivProfil();
+  if(!p || p.geld < preis) return false;
+  p.geld = Math.floor(p.geld - preis);
+  profileSpeichern();
+  return true;
+}
+
+/* ---------------- Kader freischalten ----------------
+   Pro Land merkt sich das Profil, welche der drei gesperrten Plätze
+   gekauft sind: kader = { "0": [2, 1], ... } */
+function kaderFrei(land){
+  const p = aktivProfil();
+  if(!p || !p.kader) return [];
+  const l = p.kader[land];
+  return Array.isArray(l) ? l : [];
+}
+function kaderFreiVon(profilName, land){
+  const p = profile.liste.filter(x=>x.name===profilName)[0];
+  if(!p || !p.kader) return [];
+  const l = p.kader[land];
+  return Array.isArray(l) ? l : [];
+}
+function platzGekauft(land, platz){ return kaderFrei(land).indexOf(platz) >= 0; }
+
+/* Hat dieses Profil alle drei besten eines Landes — und damit die Legende? */
+function legendeFrei(land){
+  const frei = kaderFrei(land);
+  return GESPERRTE_PLAETZE.every(pl=>frei.indexOf(pl) >= 0);
+}
+
+/* Spieler kaufen. Rückgabe: {ok:true, legende:bool} oder {fehler:"..."} */
+function spielerKaufen(land, platz){
+  const p = aktivProfil();
+  if(!p) return {fehler:"Kein Profil gewählt."};
+  if(!platzGesperrt(platz)) return {fehler:"Dieser Spieler ist immer dabei."};
+  if(platzGekauft(land, platz)) return {fehler:"Den hast du schon."};
+  const preis = platzPreis(platz);
+  if(!geldAbbuchen(preis)){
+    return {fehler:`Dafür fehlen noch ${geldFormat(preis-geldKonto())}. Spiel ein Turnier!`};
+  }
+  if(!p.kader) p.kader = {};
+  if(!Array.isArray(p.kader[land])) p.kader[land] = [];
+  p.kader[land].push(platz);
+  const legendeNeu = legendeFrei(land);
+  profileSpeichern();
+  return {ok:true, legende:legendeNeu};
+}
+
+/* Wie viele Spieler hat dieses Profil insgesamt freigeschaltet? */
+function kaderAnzahlFrei(){
+  const p = aktivProfil();
+  if(!p || !p.kader) return 0;
+  return Object.keys(p.kader).reduce((n,k)=>n + (p.kader[k]||[]).length, 0);
+}
+/* Bei wie vielen Ländern ist die Legende freigespielt? */
+function legendenAnzahl(){
+  const p = aktivProfil();
+  if(!p || !p.kader) return 0;
+  return Object.keys(p.kader).filter(k=>{
+    const frei = p.kader[k]||[];
+    return GESPERRTE_PLAETZE.every(pl=>frei.indexOf(pl) >= 0);
+  }).length;
+}
+
 function statBesteSerie(serie){
   const p = aktivProfil();
   if(p && serie > (p.stats.serieBest||0)) p.stats.serieBest = serie;
@@ -321,6 +440,11 @@ function vitrineHTML(){
 
   return `
     <div class="vit-block">
+      <div class="vit-tit">Kasse</div>
+      <div class="vit-kasse">💰 ${geldFormat(p.geld)}
+        <small>Preisgeld aus der Geldmeisterschaft</small></div>
+    </div>
+    <div class="vit-block">
       <div class="vit-tit">Pokale (${p.pokale.length})</div>
       <div class="vit-pokale">${pokale}</div>
     </div>
@@ -349,6 +473,130 @@ function datumKurz(ms){
   }catch(e){ return ""; }
 }
 
+/* ====================================================================
+   Sicherung: Profile als Text exportieren und wieder einlesen
+   Alles liegt nur im Browser. Wer die Website-Daten löscht, verliert
+   Pokale und Abzeichen — darum gibt es eine Sicherung zum Mitnehmen.
+   ==================================================================== */
+const SICHERUNG_MARKE = "elfmeterschiessen-profile";
+const SICHERUNG_FASSUNG = 1;
+/* Obergrenze für eingelesene Zählerstände: schützt die Anzeige vor
+   absurden Werten wie 1e99 aus einer bearbeiteten Sicherung. */
+const STAT_MAX = 999999;
+
+/* Alle Profile als lesbarer Text (JSON) */
+function sicherungText(){
+  return JSON.stringify({
+    marke: SICHERUNG_MARKE,
+    fassung: SICHERUNG_FASSUNG,
+    erstellt: Date.now(),
+    aktiv: profile.aktiv,
+    liste: profile.liste
+  }, null, 1);
+}
+
+/* Dateiname mit Datum, damit mehrere Sicherungen unterscheidbar sind */
+function sicherungDateiname(){
+  const d = new Date();
+  const zz = n => ("0"+n).slice(-2);
+  return `elfmeter-profile-${d.getFullYear()}-${zz(d.getMonth()+1)}-${zz(d.getDate())}.json`;
+}
+
+/* Ein Profil aus der Sicherung säubern: nur bekannte Felder übernehmen,
+   damit fremder oder beschädigter Inhalt nichts kaputt macht. */
+function profilSaeubern(rohr){
+  if(!rohr || typeof rohr !== "object") return null;
+  const name = String(rohr.name||"").trim().slice(0,14);
+  if(!name) return null;
+  const sauber = neuesProfilObjekt(name, rohr.modus);
+
+  if(rohr.stats && typeof rohr.stats === "object"){
+    Object.keys(sauber.stats).forEach(k=>{
+      const w = rohr.stats[k];
+      if(k === "laender"){
+        sauber.stats.laender = Array.isArray(w)
+          ? w.filter(x=>typeof x==="number" && x>=0 && x<TEAMS.length)
+          : [];
+      } else if(typeof w === "number" && isFinite(w) && w>=0){
+        sauber.stats[k] = Math.min(STAT_MAX, Math.floor(w));
+      }
+    });
+    if(typeof rohr.stats.challenges === "number" && isFinite(rohr.stats.challenges)
+       && rohr.stats.challenges>=0){
+      sauber.stats.challenges = Math.min(STAT_MAX, Math.floor(rohr.stats.challenges));
+    }
+  }
+  if(rohr.abzeichen && typeof rohr.abzeichen === "object"){
+    ABZEICHEN.forEach(a=>{
+      if(rohr.abzeichen[a.id]) sauber.abzeichen[a.id] = rohr.abzeichen[a.id];
+    });
+  }
+  if(Array.isArray(rohr.pokale)){
+    sauber.pokale = rohr.pokale
+      .filter(k=>k && typeof k.team === "number" && k.team>=0 && k.team<TEAMS.length)
+      .map(k=>({team:k.team, gegner:(typeof k.gegner==="number"?k.gegner:null), datum:k.datum||Date.now()}));
+  }
+  if(typeof rohr.geld === "number" && isFinite(rohr.geld) && rohr.geld >= 0){
+    sauber.geld = Math.min(9999999, Math.floor(rohr.geld));
+  }
+  /* Freigeschaltete Kaderplätze: nur gültige Länder und Plätze */
+  if(rohr.kader && typeof rohr.kader === "object"){
+    Object.keys(rohr.kader).forEach(k=>{
+      const land = parseInt(k, 10);
+      if(!(land >= 0 && land < TEAMS.length)) return;
+      const plaetze = rohr.kader[k];
+      if(!Array.isArray(plaetze)) return;
+      sauber.kader[land] = plaetze
+        .filter(x=>typeof x==="number" && x>=0 && x<KADER_GROESSE)
+        .filter((x,i,a)=>a.indexOf(x)===i);
+    });
+  }
+  /* Turnier und Tages-Aufgabe unverändert übernehmen, wenn sie plausibel
+     aussehen — sonst weglassen, das kostet nur die laufende Partie. */
+  const t = rohr.turnier;
+  if(t && typeof t.meinIdx === "number" && Array.isArray(t.runden) && t.runden.length){
+    sauber.turnier = t;
+  }
+  if(rohr.challenge && typeof rohr.challenge === "object") sauber.challenge = rohr.challenge;
+  return sauber;
+}
+
+/* Sicherung einlesen. Bestehende Profile bleiben immer erhalten: bei
+   gleichem Namen wird "Name (2)" angelegt. Rückgabe: Meldung für den
+   Nutzer, oder {fehler:"..."} wenn der Text nicht passt. */
+function sicherungEinlesen(text){
+  let daten;
+  try{ daten = JSON.parse(text); }
+  catch(e){ return {fehler:"Das ist keine gültige Sicherung — der Text lässt sich nicht lesen."}; }
+
+  if(!daten || typeof daten !== "object" || !Array.isArray(daten.liste)){
+    return {fehler:"Das ist keine Sicherung von diesem Spiel."};
+  }
+  if(daten.marke && daten.marke !== SICHERUNG_MARKE){
+    return {fehler:"Diese Sicherung gehört zu einem anderen Spiel."};
+  }
+
+  const dazu = [];
+  daten.liste.forEach(rohr=>{
+    const sauber = profilSaeubern(rohr);
+    if(!sauber) return;
+    /* Namen eindeutig halten, damit nichts überschrieben wird */
+    let endgueltig = sauber.name, n = 2;
+    while(profile.liste.some(p=>p.name===endgueltig)){
+      endgueltig = sauber.name.slice(0,11) + " (" + n + ")";
+      n++;
+    }
+    sauber.name = endgueltig;
+    profile.liste.push(sauber);
+    dazu.push(endgueltig);
+  });
+
+  if(!dazu.length) return {fehler:"In der Sicherung ist kein Profil zum Einlesen."};
+  if(!profile.aktiv) profile.aktiv = dazu[0];
+  profileSpeichern();
+  return {dazu: dazu};
+}
+
 /* Profil-Liste zur Auswahl */
 function profilListeHTML(){
   if(!profile.liste.length){
@@ -361,6 +609,7 @@ function profilListeHTML(){
       <span class="prof-name">${p.name}</span>
       <span class="prof-zeile">🏆 ${p.pokale.length} · 🏅 ${az} · ${p.modus==="profi"?"Profi":"Anfänger"}</span>
       ${offen ? `<span class="prof-offen">Turnier läuft: ${TEAMS[p.turnier.meinIdx]}</span>` : ``}
+      <span class="prof-loeschen" role="button" title="Profil löschen" data-name="${p.name}">🗑</span>
     </button>`;
   }).join("");
 }
