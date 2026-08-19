@@ -289,8 +289,39 @@ function legendeVon(i){
   if(belegt.indexOf(num) >= 0){
     for(let k=12; k<40; k++){ if(belegt.indexOf(k) < 0){ num=k; break; } }
   }
-  legendeCache[i] = Object.assign({}, roh, {num:num, koennen:6, legende:true});
+  /* platz -1 kennzeichnet die Legende in einer gespeicherten Aufstellung */
+  legendeCache[i] = Object.assign({}, roh, {num:num, koennen:6, legende:true, platz:-1});
   return legendeCache[i];
+}
+
+/* ---------- Aufstellung ----------
+   Die Schussreihenfolge lässt sich selber festlegen. Gespeichert wird sie
+   als Liste von Kaderplätzen (-1 = Legende). Sie ist nur eine Vorgabe:
+   Spieler, die es nicht mehr gibt, fallen weg, und neu dazugekommene
+   werden an ihrer Stelle aus der Standardreihenfolge eingesetzt — so
+   überlebt eine eigene Aufstellung jeden Kauf. */
+function kaderAufstellung(i, frei, reihe){
+  const standard = kaderVerfuegbar(i, frei);
+  if(!Array.isArray(reihe) || !reihe.length) return standard;
+
+  const plaetze = standard.map(sp=>sp.platz);
+  const out = [];
+  /* zuerst alles übernehmen, was die Vorgabe nennt und was es noch gibt */
+  reihe.forEach(k=>{
+    const n = plaetze.indexOf(k);
+    if(n >= 0 && out.indexOf(standard[n]) < 0) out.push(standard[n]);
+  });
+  /* dann die Fehlenden an ihrer Standardposition einsetzen */
+  standard.forEach((sp,n)=>{
+    if(out.indexOf(sp) >= 0) return;
+    let pos = 0;
+    for(let j=0;j<n;j++){
+      const p = out.indexOf(standard[j]);
+      if(p >= 0) pos = Math.max(pos, p+1);
+    }
+    out.splice(pos, 0, sp);
+  });
+  return out;
 }
 
 /* Der Kader, mit dem tatsächlich angetreten wird.
@@ -336,7 +367,7 @@ function kaderVoll(i){
   if(kaderCache[i]) return kaderCache[i];
   /* Kopien anlegen und das Können vom Kaderplatz mitgeben — die
      Einträge in KADER bleiben unberührt (stern() nutzt sie auch). */
-  const voll = KADER[i].map((sp,k)=>Object.assign({}, sp, {koennen: KOENNEN_PLATZ[k]}));
+  const voll = KADER[i].map((sp,k)=>Object.assign({}, sp, {koennen: KOENNEN_PLATZ[k], platz: k}));
   const belegt = voll.map(s=>s.num);
   /* Haut- und Haarfarben aus den bekannten Spielern des Landes nehmen,
      damit die Ersatzleute zum Team passen */
@@ -364,7 +395,8 @@ function kaderVoll(i){
       skin: skins[misch % skins.length],
       hair: haare[(misch + 2) % haare.length],
       style: ZUSATZ_STILE[(misch + k) % ZUSATZ_STILE.length],
-      koennen: KOENNEN_PLATZ[k]
+      koennen: KOENNEN_PLATZ[k],
+      platz: k
     });
     n++;
   }

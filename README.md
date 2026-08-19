@@ -22,8 +22,9 @@ eigenes Profil an. Warum? Weil dann jedem seine eigenen Sachen gehören:
 - eine eigene **Aufgabe von heute**
 
 Oben im Menü steht, wer gerade spielt. Mit **Profil wechseln** gibst du das
-Tablet weiter, mit **🏆 Vitrine** schaust du dir deine Sammlung an und mit
-**🛒 Transfermarkt** kaufst du neue Schützen.
+Tablet weiter, mit **🏆 Vitrine** schaust du dir deine Sammlung an, mit
+**⚽ Mein Kader** stellst du dein Team auf und mit **🛒 Transfermarkt** kaufst
+du neue Schützen.
 
 ### Sicherung — damit nichts verloren geht
 
@@ -128,6 +129,22 @@ immer als Erste.
 
 Du kaufst pro Land. Spielst du am liebsten mit der Schweiz, dann schalte dort
 alle drei frei — dann hast du deine Legende.
+
+## Mein Kader ⚽ — wer schiesst wann?
+
+Unter **⚽ Mein Kader** siehst du für jedes Land, wer in welcher Reihenfolge
+antritt: Name, Rückennummer und Sterne. Die **ersten fünf** sind farbig
+hervorgehoben — die schiessen im Normalfall. Alle darunter kommen nur bei
+Sudden Death dran.
+
+**Selber aufstellen:** Mit **▲** und **▼** verschiebst du einen Schützen nach
+vorne oder nach hinten. Das wird pro Land und pro Profil gespeichert. Willst
+du zurück zur Reihenfolge nach Stärke, tippst du auf
+**↺ Automatisch nach Stärke**.
+
+Kaufst du später einen Spieler dazu, musst du nicht neu aufstellen — er
+rutscht automatisch an die Stelle, die ihm nach Stärke zusteht, und deine
+eigene Reihenfolge bleibt sonst gleich.
 
 ## So wird gespielt
 

@@ -61,7 +61,8 @@ function neuesProfilObjekt(name, modus){
     turnier: null,
     challenge: null,
     geld: START_GELD,       // Preisgeld aus Turnieren
-    kader: {}               // Land -> [freigeschaltete Kaderplätze]
+    kader: {},              // Land -> [freigeschaltete Kaderplätze]
+    reihe: {}               // Land -> eigene Schussreihenfolge
   };
 }
 
@@ -83,6 +84,7 @@ function profileLaden(){
              Startguthaben, damit sie nicht schlechter dastehen */
           if(typeof pr.geld !== "number" || !isFinite(pr.geld)) pr.geld = START_GELD;
           if(!pr.kader || typeof pr.kader !== "object") pr.kader = {};
+          if(!pr.reihe || typeof pr.reihe !== "object") pr.reihe = {};
         });
         return;
       }
@@ -238,6 +240,42 @@ function spielerKaufen(land, platz){
   const legendeNeu = legendeFrei(land);
   profileSpeichern();
   return {ok:true, legende:legendeNeu};
+}
+
+/* ---------------- Eigene Schussreihenfolge ----------------
+   Gespeichert als Liste von Kaderplätzen (-1 = Legende). Leer heisst:
+   automatische Reihenfolge nach Stärke. */
+function reiheVon(land){
+  const p = aktivProfil();
+  if(!p || !p.reihe) return [];
+  const r = p.reihe[land];
+  return Array.isArray(r) ? r : [];
+}
+function reiheVonProfil(profilName, land){
+  const p = profile.liste.filter(x=>x.name===profilName)[0];
+  if(!p || !p.reihe) return [];
+  const r = p.reihe[land];
+  return Array.isArray(r) ? r : [];
+}
+function reiheSetzen(land, liste){
+  const p = aktivProfil();
+  if(!p) return;
+  if(!p.reihe) p.reihe = {};
+  p.reihe[land] = liste.slice();
+  profileSpeichern();
+}
+function reiheZuruecksetzen(land){
+  const p = aktivProfil();
+  if(!p || !p.reihe) return;
+  delete p.reihe[land];
+  profileSpeichern();
+}
+/* Stellt dieses Profil das Land selber auf? */
+function reiheEigen(land){ return reiheVon(land).length > 0; }
+
+/* Die Aufstellung dieses Profils für ein Land */
+function meineAufstellung(land){
+  return kaderAufstellung(land, kaderFrei(land), reiheVon(land));
 }
 
 /* Wie viele Spieler hat dieses Profil insgesamt freigeschaltet? */
@@ -548,6 +586,18 @@ function profilSaeubern(rohr){
       if(!Array.isArray(plaetze)) return;
       sauber.kader[land] = plaetze
         .filter(x=>typeof x==="number" && x>=0 && x<KADER_GROESSE)
+        .filter((x,i,a)=>a.indexOf(x)===i);
+    });
+  }
+  /* Eigene Aufstellungen: nur gültige Länder und Kaderplätze (-1 bis 10) */
+  if(rohr.reihe && typeof rohr.reihe === "object"){
+    Object.keys(rohr.reihe).forEach(k=>{
+      const land = parseInt(k, 10);
+      if(!(land >= 0 && land < TEAMS.length)) return;
+      const r = rohr.reihe[k];
+      if(!Array.isArray(r)) return;
+      sauber.reihe[land] = r
+        .filter(x=>typeof x==="number" && x>=-1 && x<KADER_GROESSE)
         .filter((x,i,a)=>a.indexOf(x)===i);
     });
   }
