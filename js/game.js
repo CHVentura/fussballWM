@@ -46,7 +46,7 @@ function imTurnier(){ return mode==="wm" || mode==="wm2"; }
 const scr = {
   profil:$("scr-profil"), setup:$("scr-setup"), game:$("scr-game"), win:$("scr-win"),
   wm:$("scr-wm"), pokal:$("scr-pokal"), aus:$("scr-aus"), vitrine:$("scr-vitrine"),
-  markt:$("scr-markt")
+  markt:$("scr-markt"), kader:$("scr-kader")
 };
 
 /* Setup: ein Flaggen-Raster, alle Länder auf einen Blick */
@@ -81,7 +81,7 @@ function refreshGrid(){
        Landes noch gesperrt, steht ein Schloss dabei. */
     const klein=card.querySelector("small");
     if(klein && aktivProfil()){
-      const erster=kaderVerfuegbar(i, kaderFrei(i))[0];
+      const erster=meineAufstellung(i)[0];
       const starDa=platzGekauft(i, 0);
       klein.innerHTML = erster
         ? (erster.legende ? "⭐ "+erster.p : erster.p) +
@@ -349,6 +349,99 @@ function vitrineZeigen(){
 }
 
 /* ====================================================================
+   Mein Kader: Schussreihenfolge anschauen und selber aufstellen
+   ==================================================================== */
+let kaderLand = 0;
+/* Die Reihenfolge, die gerade bearbeitet wird (Liste von Kaderplätzen) */
+let kaderReihe = [];
+
+$("kaderBtn").onclick=()=>{ kaderLand = (selIdxA!=null ? selIdxA : 0); kaderZeigen(); };
+$("kaderZurueckBtn").onclick=()=>show("setup");
+$("kaderStandardBtn").onclick=()=>{
+  reiheZuruecksetzen(kaderLand);
+  kaderZeigen();
+};
+
+function kaderZeigen(){
+  if(!aktivProfil()) return;
+  kaderReihe = meineAufstellung(kaderLand).map(sp=>sp.platz);
+  kaderKopfZeichnen();
+  kaderGridZeichnen();
+  kaderListeZeichnen();
+  show("kader");
+}
+
+function kaderKopfZeichnen(){
+  const liste = meineAufstellung(kaderLand);
+  const eigen = reiheEigen(kaderLand);
+  $("kaderUnter").innerHTML =
+    `${flagHTML(kaderLand,16)} <b>${TEAMS[kaderLand]}</b> · ${liste.length} Schützen · `+
+    (eigen ? "eigene Aufstellung" : "automatisch nach Stärke");
+}
+
+/* Länderraster wie im Transfermarkt, damit man sich zurechtfindet */
+function kaderGridZeichnen(){
+  $("kaderGrid").innerHTML=TEAMS.map((n,i)=>{
+    const erster=kaderAufstellung(i, kaderFrei(i), reiheVon(i))[0];
+    const unten=erster ? (erster.legende ? "⭐ "+erster.p : erster.p) : "";
+    return `<div class="flag-card${i===kaderLand?" selA":""}" data-land="${i}">
+      ${flagHTML(i,14)}<span>${n}<small>${unten}</small></span>
+      <span class="badge"${i===kaderLand?' style="display:flex"':""}>${i===kaderLand?"✓":""}</span>
+    </div>`;
+  }).join("");
+  [...$("kaderGrid").querySelectorAll(".flag-card")].forEach(k=>{
+    k.onclick=()=>{
+      kaderLand=parseInt(k.getAttribute("data-land"),10);
+      kaderZeigen();
+    };
+  });
+}
+
+/* Die Aufstellung als Liste mit Pfeilen zum Umstellen */
+function kaderListeZeichnen(){
+  const liste = kaderAufstellung(kaderLand, kaderFrei(kaderLand), kaderReihe);
+  let html="";
+  liste.forEach((sp,n)=>{
+    if(n===5) html+=`<div class="kader-trenner">nur bei Sudden Death</div>`;
+    const kl=["kader-zeile"];
+    if(n<5) kl.push("stamm");
+    if(sp.legende) kl.push("legende");
+    html+=`<div class="${kl.join(" ")}">
+      <span class="kader-nr">${n+1}</span>
+      <div class="kader-info">
+        <div class="kader-name">${sp.legende?"⭐ ":""}${sp.p}
+          <span class="kader-sterne">${sterne(sp.koennen)}</span></div>
+        <span class="kader-unten">Nummer ${sp.num}${sp.legende?" · Legende":""}</span>
+      </div>
+      <div class="kader-pfeile">
+        <button class="kader-pfeil" type="button" data-hoch="${n}"
+          ${n===0?"disabled":""} title="nach vorne">▲</button>
+        <button class="kader-pfeil" type="button" data-runter="${n}"
+          ${n===liste.length-1?"disabled":""} title="nach hinten">▼</button>
+      </div>
+    </div>`;
+  });
+  $("kaderListe").innerHTML=html;
+
+  const tauschen=(a,b)=>{
+    const r=liste.map(sp=>sp.platz);
+    const h=r[a]; r[a]=r[b]; r[b]=h;
+    kaderReihe=r;
+    reiheSetzen(kaderLand, r);
+    kaderKopfZeichnen();
+    kaderGridZeichnen();
+    kaderListeZeichnen();
+    segTone(1);
+  };
+  [...$("kaderListe").querySelectorAll("[data-hoch]")].forEach(b=>{
+    b.onclick=()=>{ const n=parseInt(b.getAttribute("data-hoch"),10); if(n>0) tauschen(n, n-1); };
+  });
+  [...$("kaderListe").querySelectorAll("[data-runter]")].forEach(b=>{
+    b.onclick=()=>{ const n=parseInt(b.getAttribute("data-runter"),10); if(n<liste.length-1) tauschen(n, n+1); };
+  });
+}
+
+/* ====================================================================
    Transfermarkt: die drei besten Schützen eines Landes freischalten
    ==================================================================== */
 let marktLand = 0;
@@ -521,7 +614,9 @@ function kaderVonSeite(seite){
   const idx = (seite==="A") ? teamA.idx : teamB.idx;
   const name = seiteProfil[seite];
   if(!name) return kaderVoll(idx);
-  return kaderVerfuegbar(idx, kaderFreiVon(name, idx));
+  /* Freigeschaltete Spieler in der Reihenfolge, die dieses Profil für
+     dieses Land aufgestellt hat (leer = automatisch nach Stärke) */
+  return kaderAufstellung(idx, kaderFreiVon(name, idx), reiheVonProfil(name, idx));
 }
 function shooterPlayer(){
   const seite = shootIsA ? "A" : "B";

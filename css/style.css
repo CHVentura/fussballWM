@@ -735,6 +735,46 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   to{filter:hue-rotate(-12deg) saturate(1.3)}
 }
 
+/* ---------- Mein Kader ---------- */
+/* Flagge und Text in einer Zeile (flag-svg ist sonst display:block) */
+#kaderUnter{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.kader-liste{display:flex;flex-direction:column;gap:7px}
+.kader-zeile{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 11px;border-radius:10px;
+  background:rgba(242,245,239,.04);border:1px solid rgba(242,245,239,.13);
+}
+/* Die ersten fünf schiessen im Normalfall — deutlich abgesetzt */
+.kader-zeile.stamm{background:rgba(240,197,72,.10);border-color:rgba(240,197,72,.38)}
+.kader-zeile.legende{border-color:var(--gold);background:rgba(240,197,72,.16)}
+.kader-nr{
+  font-family:"Bebas Neue",sans-serif;font-size:22px;
+  color:var(--gold);min-width:26px;text-align:center;
+}
+.kader-zeile:not(.stamm) .kader-nr{color:var(--kreide-dim)}
+.kader-info{flex:1;min-width:120px}
+.kader-name{font-size:15.5px;font-weight:700;line-height:1.2}
+.kader-unten{display:block;font-size:12px;color:var(--kreide-dim);margin-top:1px}
+.kader-sterne{color:var(--gold);font-size:13px;letter-spacing:.06em}
+.kader-pfeile{display:flex;gap:5px;flex:none}
+.kader-pfeil{
+  width:44px;height:44px;border-radius:9px;
+  background:transparent;border:1px solid rgba(242,245,239,.28);
+  color:var(--kreide);font-size:15px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.kader-pfeil:disabled{opacity:.28;cursor:default}
+.kader-pfeil:not(:disabled):hover{border-color:var(--gold);color:var(--gold)}
+.kader-trenner{
+  display:flex;align-items:center;gap:8px;
+  font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--kreide-dim);margin:4px 0 1px;
+}
+.kader-trenner::before,.kader-trenner::after{
+  content:"";flex:1;height:1px;background:rgba(242,245,239,.14);
+}
+.kader-aktion{margin-top:14px;display:flex;justify-content:center}
+
 /* ---------- Transfermarkt ---------- */
 .markt-liste{margin-top:18px;display:flex;flex-direction:column;gap:10px}
 .markt-karte{
